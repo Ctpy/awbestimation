@@ -70,14 +70,14 @@ Following research questions are to be considered:
 
 \section*{Basic Ideas}
 
-One approach to this problem is Abget an iterative algorithm, based on the idea of pathload which transmits periodic TCP instead of UDP packet streams. In order to send packets at a certain rate R the client sends "fake" ACKs over to the TCP server, through a raw IP socket interface to emulate the TCP protocol. \cite{proceedings:passivactivemeas} 
+One approach to this problem is Abget an iterative algorithm, based on the idea of pathload which transmits periodic TCP instead of UDP packet streams. In order to send packets at a certain rate R the client sends "fake" ACKs over to the TCP server, through a raw IP socket interface to emulate the TCP protocol \cite{proceedings:passivactivemeas} .
 Because of this, it is possible to determine the available-bandwidth through an increasing or decreasing trend in the One-Way-Delay (OWD). This implies the probing rate R is higher or lower than the available-bandwidth.
 
-An alternative to solve the problem is fabprobe, that uses a binary search-like algorithm. \cite{fabprobe} % ABWprobe mehr einbeziehen um auf related work zu verweisen
+An alternative to solve the problem is fabprobe, that uses a binary search-like algorithm \cite{fabprobe}. % ABWprobe mehr einbeziehen um auf related work zu verweisen
 First the path is probed with a fleet of packets at an initial rate R. The available-bandwidth can be derived from the packet's RTT. If the RTT shows an increasing trend, the rate R is reduced, thus meaning the rate is greater than the available-bandwidth. Consequently, a decreasing trend results in increasing R. Fabprobe's main focus is the trade-off between efficiency and accuracy, with fewer numbers of samples to achieve the highest accuracy possible.
 
 \section*{Approach}
-Since fabprobe is designed for large-scale measurement, we will focus on its approach. First, the tool will be implemented and tested in Mininet, a small testbed, under control.
+Since fabprobe is designed for large-scale measurement, we will focus on its approach. First, the tool will be implemented and tested in Mininet \cite{mininet}, a small testbed, under control.
 % Test aufbau genauer erklären
 The results will be evaluated according to accuracy, stability, overhead, mean relative error and its derivation. If the results are promising, a test on the Internet will follow and be tested against an active end-to-end tool such as pathload to verify the previous results. 
 
@@ -92,7 +92,7 @@ The results will be evaluated according to accuracy, stability, overhead, mean r
 \gantttitle[y unit title = 1.7 cm]{April}{4}\\
 
 \ganttbar{Analysis}{1}{4}\\
-\ganttbar{Implementation}{5}{14}\\
+\ganttbar{Implementation}{3}{14}\\
 \ganttbar{Testbed setup}{7}{16}\\
 \ganttbar{Testing and Validation}{8}{16}\\
 \ganttbar{Thesis writing}{9}{18}]
