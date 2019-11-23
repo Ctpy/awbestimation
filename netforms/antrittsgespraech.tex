@@ -6,6 +6,12 @@
 \usepackage{scrpage2}
 \usepackage{pgfgantt}
 \usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{backgrounds,calc,shadings,shapes.arrows,shapes.symbols,shadows}
+\pgfkeys{/pgf/.cd,
+  parallelepiped offset x/.initial=2mm,
+  parallelepiped offset y/.initial=2mm
+}
 \geometry{%
 	top=10mm,
 	bottom=10mm,
@@ -50,11 +56,19 @@
 \maketitle
 
 \section*{Topic}
-Observing the rapid development in technology such as realtime systems or the popularity of streaming services, the internet's penetration rate increased tenfold in the last 20 years. \cite{lin1973} % https://www.internetworldstats.com/stats.htm // More Example such as streaming popular more use of realtime systems 
-Thus, it is essential to have knowledge about the available bandwidth to enhance the quality-of-service (QoS) by selecting the optimal route for a designated service. As a consequence, there are a lot of end-to-end tools for available-bandwidth estimation such as Pathload. Since they require access at both ends, the applicability is limited. Additionally, they rely on UDP/ICMP which is often blocked or rate limited. \cite{proceedings:passivactivemeas} % Cite abget 
-Of more interest are single-ended tools based on TCP such as abget or fabprobe. As a result of TCP, it is more complicated to estimate the available-bandwidth because packets can take different routes from host to host.
+Observing the rapid development in technology such as realtime systems or the popularity of streaming services, the internet's penetration rate increased tenfold in the last 20 years \cite{lin1973}.% https://www.internetworldstats.com/stats.htm // More Example such as streaming popular more use of realtime systems 
+Thus, it is essential to have knowledge about the available bandwidth to enhance quality-of-service (QoS) requirements by selecting the optimal route for a designated service. As a consequence, there are several end-to-end tools for available-bandwidth estimation such as Pathload \cite{pathload}. Since most tools require access at both ends, their applicability is limited. Additionally, they rely on UDP/ICMP which is often blocked or rate limited \cite{proceedings:passivactivemeas} .% Cite abget 
+Of more interest are single-ended tools based on TCP such as abget \cite{proceedings:passivactivemeas}, ABwprobe \cite{abwprobe} and its successor fabprobe \cite{fabprobe}. Their ideas are based on Pathload's \cite{pathload} approach and redesigned for estimation with TCP. As a result of TCP, it is more complicated to estimate the available-bandwidth because packets can take different routes from host to host. Although the source code is available, it is not possible to run the code today. Therefore the goal of this thesis is to implement a single-end available bandwidth estimation tool based on the fabprobe and abget, evaluate its accuracy and applicability for large-scale internet measurements. \\
+\\
+Following research questions are to be considered:
 
-\section*{Approach}
+\begin{enumerate}
+	\item How good is the performance?
+	\item Trade-off between accuracy and efficiency?
+	\item What limitations and restrictions constraint the usage on the internet?
+\end{enumerate} 
+
+\section*{Basic Ideas}
 
 One approach to this problem is Abget an iterative algorithm, based on the idea of pathload which transmits periodic TCP instead of UDP packet streams. In order to send packets at a certain rate R the client sends "fake" ACKs over to the TCP server, through a raw IP socket interface to emulate the TCP protocol. \cite{proceedings:passivactivemeas} 
 Because of this, it is possible to determine the available-bandwidth through an increasing or decreasing trend in the One-Way-Delay (OWD). This implies the probing rate R is higher or lower than the available-bandwidth.
@@ -62,26 +76,11 @@ Because of this, it is possible to determine the available-bandwidth through an 
 An alternative to solve the problem is fabprobe, that uses a binary search-like algorithm. \cite{fabprobe} % ABWprobe mehr einbeziehen um auf related work zu verweisen
 First the path is probed with a fleet of packets at an initial rate R. The available-bandwidth can be derived from the packet's RTT. If the RTT shows an increasing trend, the rate R is reduced, thus meaning the rate is greater than the available-bandwidth. Consequently, a decreasing trend results in increasing R. Fabprobe's main focus is the trade-off between efficiency and accuracy, with fewer numbers of samples to achieve the highest accuracy possible.
 
-Since fabprobe is designed for large scale measurement, we will focus on it. First, fabprobe will be implemented and tested in Mininet, a small testbed, under control. 
+\section*{Approach}
+Since fabprobe is designed for large-scale measurement, we will focus on its approach. First, the tool will be implemented and tested in Mininet, a small testbed, under control.
 % Test aufbau genauer erklären
-The results will be evaluated according to performance, stability and overhead. If the results are promising, a test on the internet will follow and be tested against an active end-to-end tool such as pathload to verify the previous results.
-\section*{Goal}
-\label{ref:goal}
-The goal of this thesis is to implement fabprobe, estimate the available bandwidth by testing and in the end evaluate the results. \\
-\\
-Following research questions are to be considered:
+The results will be evaluated according to accuracy, stability, overhead, mean relative error and its derivation. If the results are promising, a test on the Internet will follow and be tested against an active end-to-end tool such as pathload to verify the previous results. 
 
-\begin{enumerate}
-	\item How good is the performance of fabprobe?
-	\item Trade-off between accuracy and efficiency?
-	\item What limitations and restrictions constraint the usage of fabprobe on the internet?
-\end{enumerate} 
-
-\section*{Related work}
-\textit{ABwProbe:} The predecessor of fabprobe which was implemented by EURECOM.   % cite abw paper \\
-ABwProbe sends TCP ACKs as probes and except the other host to answer with the corresponding ACKs. \cite{abwprobe} \\
-\\ \textit{Pathload:}  A well-known active end-to-end tool for available bandwidth estimation based on UDP. abwProbe or abget are based on pathload's approach and redesigned for estimation with TCP. \cite{pathload} \\%cite paper or github 
-\\ \textit{Mininet:} Actively developed network emulation tool with wide range of usage in software defined networking (SDN). \cite{mininet}
 \section*{Schedule}
 
 \resizebox{\textwidth}{!}{
@@ -93,13 +92,10 @@ ABwProbe sends TCP ACKs as probes and except the other host to answer with the c
 \gantttitle[y unit title = 1.7 cm]{April}{4}\\
 
 \ganttbar{Analysis}{1}{4}\\
-\ganttmilestone{Thesis registration}{2}]\\
-\ganttbar{Implementation}{5}{8}\\
-\ganttmilestone{Intermediate talk}{7}]\\
-\ganttbar{Testing and Validation}{9}{10}\\
-\ganttbar{Evaluation}{10}{11}\\
-\ganttbar{Thesis writing}{9}{17}\\
-\ganttmilestone{Final talk}{18}]
+\ganttbar{Implementation}{5}{14}\\
+\ganttbar{Testbed setup}{7}{16}\\
+\ganttbar{Testing and Validation}{8}{16}\\
+\ganttbar{Thesis writing}{9}{18}]
 \end{ganttchart}
 } %
 
