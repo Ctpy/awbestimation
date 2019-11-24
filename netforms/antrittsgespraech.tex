@@ -56,9 +56,9 @@
 \maketitle
 
 \section*{Topic}
-Observing the rapid development in technology such as realtime systems or the popularity of streaming services, the internet's penetration rate increased tenfold in the last 20 years \cite{lin1973}.% https://www.internetworldstats.com/stats.htm // More Example such as streaming popular more use of realtime systems 
+Observing the rapid development in technology such as realtime systems or the popularity of streaming services, the Internet's penetration rate increased tenfold in the last 20 years \cite{lin1973}.% https://www.internetworldstats.com/stats.htm // More Example such as streaming popular more use of realtime systems 
 Thus, it is essential to have knowledge about the available bandwidth to enhance quality-of-service (QoS) requirements by selecting the optimal route for a designated service. As a consequence, there are several end-to-end tools for available-bandwidth estimation such as Pathload \cite{pathload}. Since most tools require access at both ends, their applicability is limited. Additionally, they rely on UDP/ICMP which is often blocked or rate limited \cite{proceedings:passivactivemeas} .% Cite abget 
-Of more interest are single-ended tools based on TCP such as abget \cite{proceedings:passivactivemeas}, ABwprobe \cite{abwprobe} and its successor fabprobe \cite{fabprobe}. Their ideas are based on Pathload's \cite{pathload} approach and redesigned for estimation with TCP. As a result of TCP, it is more complicated to estimate the available-bandwidth because packets can take different routes from host to host. Although the source code is available, it is not possible to run the code today. Therefore the goal of this thesis is to implement a single-end available bandwidth estimation tool based on the fabprobe and abget, evaluate its accuracy and applicability for large-scale internet measurements. \\
+Of more interest are single-ended tools based on TCP such as abget \cite{proceedings:passivactivemeas}, ABwprobe \cite{abwprobe} and its successor fabprobe \cite{fabprobe}. Their ideas are based on Pathload's \cite{pathload} approach and redesigned for estimation with TCP. As a result of TCP, it is more complicated to estimate the available-bandwidth because packets can take different routes from host to host. Although the source code is available, it is not possible to run the code today. Therefore the goal of this thesis is to implement a single-end available bandwidth estimation tool based on the fabprobe and abget, evaluate its accuracy and applicability for large-scale Internet measurements. \\
 \\
 Following research questions are to be considered:
 
@@ -79,8 +79,44 @@ First the path is probed with a fleet of packets at an initial rate R. The avail
 \section*{Approach}
 Since fabprobe is designed for large-scale measurement, we will focus on its approach. First, the tool will be implemented and tested in Mininet \cite{mininet}, a small testbed, under control.
 % Test aufbau genauer erklären
-The results will be evaluated according to accuracy, stability, overhead, mean relative error and its derivation. If the results are promising, a test on the Internet will follow and be tested against an active end-to-end tool such as pathload to verify the previous results. 
-
+The results will be evaluated according to accuracy, stability, overhead, mean relative error and derivation. If the results are promising, a test on the Internet will follow and be tested against an active end-to-end tool such as pathload to verify the previous results. 
+\begin{center}
+\begin{tikzpicture}[scale = 3.0]
+	\tikzstyle{vertex} = [circle, draw=black, scale = 2.0]
+	\tikzstyle{rect} = [rectangle, draw=black]
+	\tikzstyle{edge} = [->, very thick]
+	\node[vertex](client) at (-0.2,0){Client};
+	\node[vertex](server) at (4.2,0){Server};
+	\node[rect](ACK7) at (0.5,0.25){ACK7};
+	\node[rect](ACK6) at (1,0.25){ACK6};
+	\node[rect](ACK5) at (1.5,0.25){ACK5};
+	\node[rect](ACK4) at (2,0.25){ACK4};
+	\node[rect](ACK3) at (2.5,0.25){ACK3};
+	\node[rect](ACK2) at (3,0.25){ACK2};
+	\node[rect](ACK1) at (3.5,0 .25){ACK1};
+	\node[rect](RST1) at (0.5,-0.25){RST1};
+	\node[rect](RST2) at (1,-0.25){RST2};
+	\node[rect](RST3) at (1.5,-0.25){RST3};
+	\node[rect](RST4) at (2,-0.25){RST4};
+	\node[rect](RST5) at (2.5,-0.25){RST5};
+	\node[rect](RST6) at (3,-0.25){RST6};
+	\node[rect](RST7) at (3.5,-0.25){RST7};
+	\draw[edge] ([yshift=0.4ex]client.east) -- ([yshift=0.4ex]server.west) node [midway, fill= white]{Upstream};
+	\draw[edge] ([yshift=-0.4ex]server.west) -- ([yshift=-0.4ex]client.east) node [midway, fill=white]{Downstream};
+	\draw[edge](ACK7) -- (ACK6);
+	\draw[edge](ACK6) -- (ACK5);
+	\draw[edge](ACK5) -- (ACK4);
+	\draw[edge](ACK4) -- (ACK3);
+	\draw[edge](ACK3) -- (ACK2);
+	\draw[edge](ACK2) -- (ACK1);
+	\draw[edge](RST7) -- (RST6);
+	\draw[edge](RST6) -- (RST5);
+	\draw[edge](RST5) -- (RST4);
+	\draw[edge](RST4) -- (RST3);
+	\draw[edge](RST3) -- (RST2);
+	\draw[edge](RST2) -- (RST1);
+\end{tikzpicture}
+\end{center}
 \section*{Schedule}
 
 \resizebox{\textwidth}{!}{
