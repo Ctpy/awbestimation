@@ -25,7 +25,7 @@ class BottleneckTopo(Topo):
         sw2 = self.addSwitch('sw2')
         self.addLink(sw2, right_lower_host, bw=1)
         self.addLink(sw2, right_upper_host, bw=1)
-        self.addLink(sw1, sw2, bw=1)
+        self.addLink(sw1, sw2, bw=0.5)
 
 
 # TODO make it adaptable by input
@@ -52,13 +52,18 @@ def build_topo(capacities: list):
 
     # Running cross_traffic
     capacity = min(capacities)
-    cmd = 'iperf -c 10.0.0.2 -B 10.0.0.3 -b {}M'.format(capacity * 0.2)
-
-    left_lower_host.popen(cmd)
-    cmd = 'iperf -c 10.0.0.3 -B 10.0.0.2 -b {}M'.format(capacity * 0.2)
-    right_upper_host.popen(cmd)
+    # left_lower host server side
+    cmd = 'iperf -s &'
+    print(left_lower_host.popen(cmd))
+    left_lower_host.popen('tcpdump -t -w sender.pcap')
+    # right_upper host client side
+    cmd = 'iperf -c 10.0.0.2 -b 1M'
+    print(right_upper_host.popen(cmd))
     # Clean up
     time.sleep(1)
     net.stop()
     cleanup()
 
+
+if __name__ == '__main__':
+    build_topo(10)
