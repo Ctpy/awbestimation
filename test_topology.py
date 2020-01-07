@@ -40,7 +40,7 @@ def build_topo(capacities):
     right_host.setIP('10.0.0.2/24')
 
     # Running cross_traffic
-    capacity = min(capacities)
+    # capacity = min(capacities)
     # left_lower host server side
     cmd = 'iperf -s &'
     print(left_host.popen(cmd))
@@ -48,7 +48,7 @@ def build_topo(capacities):
     time.sleep(1)
     print("tcpdump")
     # right_upper host client side
-    cmd = 'iperf -c 10.0.0.2 -b 1M'
+    cmd = 'iperf -c 10.0.0.1 -b 1M'
     print(right_host.popen(cmd))
     # Clean up
     time.sleep(10)
