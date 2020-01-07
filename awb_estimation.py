@@ -34,7 +34,7 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False, tc
     train_length = 100
     current_ack_number = 1
     # Probe starts here
-    for i in range(12):
+    for i in range(1):
         print("Currently running with these Parameters: ")
         # Send_fleet
         print_verbose("Generating packet_train", verbose)
@@ -153,4 +153,4 @@ def print_verbose(msg, verbose):
 
 
 if __name__ == '__main__':
-    estimate_available_bandwidth(sys.argv[1], sys.argv[2], sys.argv[3])
+    estimate_available_bandwidth(sys.argv[1], sys.argv[2], sys.argv[3], True)
