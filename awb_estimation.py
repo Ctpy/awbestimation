@@ -17,6 +17,7 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False, tc
     :param tcpdump_file -- tcpdump logging file
     :param verbose -- more output
     """
+
     print_verbose("Start available bandwidth estimation", verbose)
     # Config Data here
     print_verbose("Initializing parameters", verbose)
@@ -39,7 +40,7 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False, tc
         # Send_fleet
         print_verbose("Generating packet_train", verbose)
         transmission_interval = calculate_transmission_interval(transmission_rate, train_length, packet_size)
-        print_verbose("Transmission_interval: " + str(transmission_interval))
+        print_verbose("Transmission_interval: " + str(transmission_interval), verbose)
         packet_train_numbers = generate_packet_train(current_ack_number, train_length)
         last_ack_number = packet_train_numbers[-1] + 40
         # start tcpdump
@@ -153,4 +154,5 @@ def print_verbose(msg, verbose):
 
 
 if __name__ == '__main__':
-    estimate_available_bandwidth(sys.argv[1], sys.argv[2], sys.argv[3], True)
+    #estimate_available_bandwidth(sys.argv[1], sys.argv[2], sys.argv[3], True)
+    estimate_available_bandwidth('google.com', 5, 10, True)
