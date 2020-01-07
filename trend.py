@@ -6,27 +6,26 @@ import matplotlib.pyplot as mp
 
 def calculate_trend(timestamps, packet_loss, train_length):
     np.set_printoptions(suppress=True)
-    trend_dict = {'I': "Increase", 'U': "Unclear"}
-    trend = ""
-    pct_metric_flag = 0
-    pdt_metric_flag = 0
-    decreasing_trend_flag = 0
-    robust_regression_flag = 0
     # Evaluate timestamps
 
-    # PCT Metric
-    pct_metric_flag = pct_metric(timestamps, packet_loss, train_length)
-    # PDT Metric
-    pdt_metric_flag = pdt_metric(timestamps, packet_loss, train_length)
     # Decreasing Trend due to buffering DT filter to filter out large bursts
-    decreasing_trend_flag = decreasing_trend_filter(timestamps, packet_loss, train_length)
+    pct_metric_flag, pdt_metric_flag = decreasing_trend_filter(timestamps, packet_loss, train_length)
+
+    if pct_metric_flag == "INCR" and pdt_metric_flag == "INCR":
+        return "INCR", pct_metric_flag, pdt_metric_flag
+
     # Robust Regression filter to filter out small bursts by using Iteratively Re-weighted Least Square method (IRLS)
-    robust_regression_flag = robust_regression_filter(timestamps, packet_loss, train_length)
+
+    pct_metric_flag, pdt_metric_flag = robust_regression_filter(timestamps, packet_loss, train_length)
     # Evaluate trend
-
-    # TODO: Implement trend decision making
-
-    return trend
+    if pct_metric_flag == "INCR" and pdt_metric_flag == "INCR":
+        return "INCR", pct_metric_flag, pdt_metric_flag
+    elif pct_metric_flag == "INCR" and pdt_metric_flag == "UNCL":
+        return "INCR", pct_metric_flag, pdt_metric_flag
+    elif pct_metric_flag == "UNCL" and pdt_metric_flag == "INCR":
+        return "INCR", pct_metric_flag, pdt_metric_flag
+    else:
+        return "NOCHANGE", pct_metric_flag, pdt_metric_flag
 
 
 def pct_metric(timestamps, packet_loss, train_length):
@@ -55,8 +54,54 @@ def pdt_metric(timestamps, packet_loss, train_length):
 
 
 def decreasing_trend_filter(timestamps, packet_loss, train_length):
-    # TODO: Implement
-    return -1
+    pdt_flag = ""
+    pct_flag = ""
+    # search for burst
+    mean = np.mean(timestamps)
+    standard_derivation = compute_standard_derivation(timestamps)
+    burst_packet_index_list = []
+    for i in range(len(timestamps) - awb_estimation.DT_CONSECUTIVE):
+        if mean + standard_derivation < timestamps[i]:
+            burst_packet_index_list.append(i)
+
+    # search for consecutive packet sample with decreasing rtt
+    decreasing_trend_index_list = []
+    for i in range(len(burst_packet_index_list)):
+        decreasing_trend = True
+        last_packet_rtt = timestamps[burst_packet_index_list[i]]
+        for j in range(awb_estimation.DT_CONSECUTIVE):
+            if last_packet_rtt < timestamps[burst_packet_index_list[i] + j]:
+                decreasing_trend = False
+                break
+        if decreasing_trend:
+            decreasing_trend_index_list.append(burst_packet_index_list[i])
+
+    # remove all bursts
+    for i in range(len(decreasing_trend_index_list)):
+        for j in range(awb_estimation.DT_CONSECUTIVE):
+            del timestamps[
+                decreasing_trend_index_list[i]:decreasing_trend_index_list[i] + awb_estimation.DT_CONSECUTIVE]
+
+    # pct
+
+    if pct_metric(timestamps, train_length - len(timestamps), len(timestamps) > awb_estimation.BOUNDARY_PCT * 1.1):
+        pct_flag = "INCR"
+    elif pct_metric(timestamps, train_length - len(timestamps), len(timestamps) > awb_estimation.BOUNDARY_PCT * 0.9):
+        pct_flag = "UNCL"
+    else:
+        pct_flag = "NOCHANGE"
+    # pdt
+
+    if pdt_metric(timestamps, train_length - len(timestamps), len(timestamps) > awb_estimation.BOUNDARY_PDT * 1.1):
+        pdt_flag = "INCR"
+    elif pdt_metric(timestamps, train_length - len(timestamps), len(timestamps) > awb_estimation.BOUNDARY_PDT * 0.9):
+        pdt_flag = "UNCL"
+    else:
+        pdt_flag = "NOCHANGE"
+
+    # return trend
+
+    return pct_flag, pdt_flag
 
 
 def robust_regression_filter(timestamps, packet_loss, train_length):
@@ -101,7 +146,7 @@ def robust_regression_filter(timestamps, packet_loss, train_length):
     c_re_weighted = 0
     while iter == 0 or m - m_re_weighted > 1.4901e-08 * max(abs(m),
                                                             abs(m_re_weighted)) or c - c_re_weighted > 1.4901e-08 * max(
-        abs(c), c_re_weighted):
+            abs(c), c_re_weighted):
         if iter + 1 > iter_limit:
             break
 
@@ -122,10 +167,31 @@ def robust_regression_filter(timestamps, packet_loss, train_length):
         c_re_weighted = c
 
         c, m = weighted_least_square_fit(y_matrix, weights)
-    # GLS
-    # IRLS
-    # WLS
-    return -1
+
+    # Filter timestamps with weights
+    filtered_timestamps = []
+    for i in range(len(timestamps)):
+        if weights[i] >= 0.7:
+            filtered_timestamps.append(timestamps[i])
+
+    if pct_metric(filtered_timestamps, train_length - len(filtered_timestamps), len(filtered_timestamps) > awb_estimation.BOUNDARY_PCT * 1.1):
+        pct_flag = "INCR"
+    elif pct_metric(filtered_timestamps, train_length - len(filtered_timestamps), len(filtered_timestamps) > awb_estimation.BOUNDARY_PCT * 0.9):
+        pct_flag = "UNCL"
+    else:
+        pct_flag = "NOCHANGE"
+    # pdt
+
+    if pdt_metric(filtered_timestamps, train_length - len(filtered_timestamps), len(filtered_timestamps) > awb_estimation.BOUNDARY_PDT * 1.1):
+        pdt_flag = "INCR"
+    elif pdt_metric(filtered_timestamps, train_length - len(filtered_timestamps), len(filtered_timestamps) > awb_estimation.BOUNDARY_PDT * 0.9):
+        pdt_flag = "UNCL"
+    else:
+        pdt_flag = "NOCHANGE"
+
+    # return trend
+
+    return pct_flag, pdt_flag
 
 
 def least_square_fit(y_matrix):
