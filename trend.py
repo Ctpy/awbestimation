@@ -1,6 +1,6 @@
 import numpy as np
 import math
-import awb_estimation
+import globals
 import matplotlib.pyplot as mp
 
 
@@ -30,7 +30,7 @@ def calculate_trend(timestamps, packet_loss, train_length):
 
 def pct_metric(timestamps, packet_loss, train_length):
     increase = 0
-    if train_length - packet_loss >= awb_estimation.MIN_TRAIN_LENGTH:
+    if train_length - packet_loss >= globals.MIN_TRAIN_LENGTH:
         for i in range(train_length - 1):
             if timestamps[i][2] < timestamps[i + 1][2]:
                 increase += 1
@@ -42,7 +42,7 @@ def pct_metric(timestamps, packet_loss, train_length):
 def pdt_metric(timestamps, packet_loss, train_length):
     pdt_average = 0
     pdt_sum = 0
-    if train_length - packet_loss >= awb_estimation.MIN_TRAIN_LENGTH:
+    if train_length - packet_loss >= globals.MIN_TRAIN_LENGTH:
         for i in range(train_length - 1):
             if timestamps[i] is None or timestamps[i + 1] is None:
                 continue
@@ -60,7 +60,7 @@ def decreasing_trend_filter(timestamps, packet_loss, train_length):
     mean = np.mean(timestamps)
     standard_derivation = compute_standard_derivation(timestamps)
     burst_packet_index_list = []
-    for i in range(len(timestamps) - awb_estimation.DT_CONSECUTIVE):
+    for i in range(len(timestamps) - globals.DT_CONSECUTIVE):
         if mean + standard_derivation < timestamps[i]:
             burst_packet_index_list.append(i)
 
@@ -69,7 +69,7 @@ def decreasing_trend_filter(timestamps, packet_loss, train_length):
     for i in range(len(burst_packet_index_list)):
         decreasing_trend = True
         last_packet_rtt = timestamps[burst_packet_index_list[i]]
-        for j in range(awb_estimation.DT_CONSECUTIVE):
+        for j in range(globals.DT_CONSECUTIVE):
             if last_packet_rtt < timestamps[burst_packet_index_list[i] + j]:
                 decreasing_trend = False
                 break
@@ -78,23 +78,23 @@ def decreasing_trend_filter(timestamps, packet_loss, train_length):
 
     # remove all bursts
     for i in range(len(decreasing_trend_index_list)):
-        for j in range(awb_estimation.DT_CONSECUTIVE):
+        for j in range(globals.DT_CONSECUTIVE):
             del timestamps[
-                decreasing_trend_index_list[i]:decreasing_trend_index_list[i] + awb_estimation.DT_CONSECUTIVE]
+                decreasing_trend_index_list[i]:decreasing_trend_index_list[i] + globals.DT_CONSECUTIVE]
 
     # pct
 
-    if pct_metric(timestamps, train_length - len(timestamps), len(timestamps) > awb_estimation.BOUNDARY_PCT * 1.1):
+    if pct_metric(timestamps, train_length - len(timestamps), len(timestamps) > globals.BOUNDARY_PCT * 1.1):
         pct_flag = "INCR"
-    elif pct_metric(timestamps, train_length - len(timestamps), len(timestamps) > awb_estimation.BOUNDARY_PCT * 0.9):
+    elif pct_metric(timestamps, train_length - len(timestamps), len(timestamps) > globals.BOUNDARY_PCT * 0.9):
         pct_flag = "UNCL"
     else:
         pct_flag = "NOCHANGE"
     # pdt
 
-    if pdt_metric(timestamps, train_length - len(timestamps), len(timestamps) > awb_estimation.BOUNDARY_PDT * 1.1):
+    if pdt_metric(timestamps, train_length - len(timestamps), len(timestamps) > globals.BOUNDARY_PDT * 1.1):
         pdt_flag = "INCR"
-    elif pdt_metric(timestamps, train_length - len(timestamps), len(timestamps) > awb_estimation.BOUNDARY_PDT * 0.9):
+    elif pdt_metric(timestamps, train_length - len(timestamps), len(timestamps) > globals.BOUNDARY_PDT * 0.9):
         pdt_flag = "UNCL"
     else:
         pdt_flag = "NOCHANGE"
@@ -174,17 +174,17 @@ def robust_regression_filter(timestamps, packet_loss, train_length):
         if weights[i] >= 0.7:
             filtered_timestamps.append(timestamps[i])
 
-    if pct_metric(filtered_timestamps, train_length - len(filtered_timestamps), len(filtered_timestamps) > awb_estimation.BOUNDARY_PCT * 1.1):
+    if pct_metric(filtered_timestamps, train_length - len(filtered_timestamps), len(filtered_timestamps) > globals.BOUNDARY_PCT * 1.1):
         pct_flag = "INCR"
-    elif pct_metric(filtered_timestamps, train_length - len(filtered_timestamps), len(filtered_timestamps) > awb_estimation.BOUNDARY_PCT * 0.9):
+    elif pct_metric(filtered_timestamps, train_length - len(filtered_timestamps), len(filtered_timestamps) > globals.BOUNDARY_PCT * 0.9):
         pct_flag = "UNCL"
     else:
         pct_flag = "NOCHANGE"
     # pdt
 
-    if pdt_metric(filtered_timestamps, train_length - len(filtered_timestamps), len(filtered_timestamps) > awb_estimation.BOUNDARY_PDT * 1.1):
+    if pdt_metric(filtered_timestamps, train_length - len(filtered_timestamps), len(filtered_timestamps) > globals.BOUNDARY_PDT * 1.1):
         pdt_flag = "INCR"
-    elif pdt_metric(filtered_timestamps, train_length - len(filtered_timestamps), len(filtered_timestamps) > awb_estimation.BOUNDARY_PDT * 0.9):
+    elif pdt_metric(filtered_timestamps, train_length - len(filtered_timestamps), len(filtered_timestamps) > globals.BOUNDARY_PDT * 0.9):
         pdt_flag = "UNCL"
     else:
         pdt_flag = "NOCHANGE"

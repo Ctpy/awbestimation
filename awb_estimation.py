@@ -3,13 +3,8 @@ import scapy_util
 import pcap_util
 import trend
 
-global MIN_TRAIN_LENGTH
-global DT_CONSECUTIVE
-global BOUNDARY_PCT
-global BOUNDARY_PDT
 
-
-def estimate_available_bandwidth(target, capacity, resolution, tcpdumpfile, verbose):
+def estimate_available_bandwidth(target, capacity, resolution, tcpdump_file, verbose):
     """
     Estimate the available bandwidth to the given target.
     Higher resolution will impact the performance.
@@ -17,7 +12,7 @@ def estimate_available_bandwidth(target, capacity, resolution, tcpdumpfile, verb
     :param target -- IP of target to estimate
     :param capacity -- Bottleneck/Link capacity to the target
     :param resolution -- Accuracy of the estimation
-    :param tcpdumpfile -- tcpdump logging file
+    :param tcpdump_file -- tcpdump logging file
     :param verbose -- more output
     """
 
@@ -35,7 +30,6 @@ def estimate_available_bandwidth(target, capacity, resolution, tcpdumpfile, verb
     # Numbers of packets per train
     train_length = 100
     current_ack_number = 1
-    last_ack_number = 1
     # Probe starts here
     for i in range(12):
         print("Currently running with these Parameters: ")
@@ -43,13 +37,15 @@ def estimate_available_bandwidth(target, capacity, resolution, tcpdumpfile, verb
         # Send_fleet
         transmission_interval = calculate_transmission_interval(transmission_rate, train_length, packet_size)
         packet_train_numbers = generate_packet_train(current_ack_number, train_length)
+        last_ack_number = packet_train_numbers[-1] + 40
         scapy_util.send_train(target, packet_train_numbers, transmission_interval, verbose)
 
         # Process pcap file and analyze csv file
-        csv_file = tcpdumpfile.split('.')[0]
-        pcap_util.convert_to_csv(tcpdumpfile, csv_file, packet_train_numbers)
+        csv_file = tcpdump_file.split('.')[0]
+        pcap_util.convert_to_csv(tcpdump_file, csv_file, packet_train_numbers)
         timestamps, packet_loss = pcap_util.analyze_csv(csv_file, packet_train_numbers)
         packet_loss_rate = packet_loss/train_length
+
         # calculate trend
         trend_state, pct_trend, pdt_trend = trend.calculate_trend(timestamps, packet_loss, train_length)
         trend_list.append(trend_state)
@@ -67,7 +63,7 @@ def estimate_available_bandwidth(target, capacity, resolution, tcpdumpfile, verb
             awb_max = current_awb
         elif current_awb < awb_min:
             awb_min = current_awb
-
+        current_ack_number = last_ack_number
         # wait that fleets dont interfere
         time.sleep(1)
     # Terminate and return
@@ -121,7 +117,3 @@ def calculate_train_length(transmission_rate, transmission_interval, packet_size
 
 def calculate_transmission_interval(transmission_rate, train_length, packet_size):
     return (train_length * packet_size)/transmission_rate
-
-
-if __name__ == '__main__':
-    estimate_available_bandwidth(100, 5)
