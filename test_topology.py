@@ -44,7 +44,7 @@ def build_topo(capacities):
     # left_lower host server side
     cmd = 'iperf -s &'
     print(left_host.popen(cmd))
-    print(left_host.popen('tcpdump -t -w sender.pcap'))
+    print(left_host.popen('sudo python awb_estimation.py 10.0.0.2 0.5 10.0'))
     time.sleep(1)
     print("tcpdump")
     # right_upper host client side
