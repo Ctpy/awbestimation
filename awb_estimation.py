@@ -46,8 +46,8 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False, tc
         # start tcpdump
         print_verbose("Generating tcpdump filter", verbose)
         tcpdump_filter = generate_tcpdump_filter(packet_train_numbers)
-        cmd = 'tcpdump -t -w {} {}{}.pcap'.format(tcpdump_filter, tcpdump_file, i)
-        sp.check_output(['bash', '-c', cmd])
+        cmd = '-t {} -w {}{}.pcap'.format(tcpdump_filter, tcpdump_file, i)
+        sp.check_output(['sudo', 'tcpdump', cmd])
         time.sleep(1)
         # print_verbose("tcpdump started", verbose)
         # print_verbose("Start transmission", verbose)
