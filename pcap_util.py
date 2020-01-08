@@ -3,7 +3,7 @@ import subprocess
 import pandas as pd
 
 
-def convert_to_csv(filename, outputfile, packet_train: list):
+def convert_to_csv(filename, outputfile, packet_train):
     template = "tcp.ack=={} or tcp.seq=={}"
     filter_string = ""
     for i, packet in enumerate(packet_train):
