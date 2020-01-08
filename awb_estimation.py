@@ -44,11 +44,11 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False, tc
         packet_train_numbers = generate_packet_train(current_ack_number, train_length)
         last_ack_number = packet_train_numbers[-1] + 40
         # start tcpdump
-        # print_verbose("Generating tcpdump filter", verbose)
-        # tcpdump_filter = generate_tcpdump_filter(packet_train_numbers)
-        # cmd = 'tcpdump -t -w {} {}{}.pcap'.format(tcpdump_filter, tcpdump_file, i)
-        # sp.check_output(['bash', '-c', cmd])
-        # time.sleep(1)
+        print_verbose("Generating tcpdump filter", verbose)
+        tcpdump_filter = generate_tcpdump_filter(packet_train_numbers)
+        cmd = 'tcpdump -t -w {} {}{}.pcap'.format(tcpdump_filter, tcpdump_file, i)
+        sp.check_output(['bash', '-c', cmd])
+        time.sleep(1)
         # print_verbose("tcpdump started", verbose)
         # print_verbose("Start transmission", verbose)
         # scapy_util.send_train(target, packet_train_numbers, transmission_interval, verbose)
