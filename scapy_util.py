@@ -8,7 +8,7 @@ def generate_packet(ip, ack_number, payload):
     return tcp_ack
 
 
-def generate_packet_train(ip, ack_numbers: list, payload):
+def generate_packet_train(ip, ack_numbers, payload):
     train = []
     for i in len(ack_numbers):
         train.append(generate_packet(ip, ack_numbers[i], payload))
