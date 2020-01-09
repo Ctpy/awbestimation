@@ -1,8 +1,7 @@
 from scapy.layers.inet import *
 from scapy.packet import Raw
 from scapy.sendrecv import *
-import utility
-import threading
+import awb_estimation
 
 try:
     import queue
@@ -28,34 +27,15 @@ def send_train(ip, packet_train, transmission_interval, verbose):
     send(generate_packet_train(ip, packet_train, 'x' * 1452), inter=transmission_interval, verbose=verbose)
 
 
-def send_receive_train(ip, packet_train, transmission_interval, verbose):
-    event = threading.Event()
-    print("send_receive_train")
-    print(packet_train)
-    filter = "tcp"
-    try:
-        sniff_queue = queue.Queue()
-        sniff_thread = threading.Thread(target=sniff_on_event, args=(event, filter, sniff_queue, verbose,))
-        sniff_thread.start()
-        sr(generate_packet_train(ip, packet_train, 'x' * 1452), inter=transmission_interval, verbose=verbose)
-        print("Sending...")
-        event.set()
-        packets_list = list(sniff_queue)
-        print(packets_list)
-    except Exception as e:
-        event.set()
-
-
-def apply_on_sniff(packet, sniff_queue):
-    print(packet.summary())
-    sniff_queue.put(packet)
-
-
-def sniff_on_event(event, filter, sniff_queue, verbose):
-    packets = sniff(filter=filter, stop_filter=lambda p: event.is_set(), prn=lambda x: apply_on_sniff(x, sniff_queue))
-    utility.print_verbose("Stop sniffing", verbose)
-    return packets
+def send_receive_train(ip, packet_train_size, transmission_interval, timeout=1, verbose=False):
+    ack_numbers = awb_estimation.generate_packet_train(1, packet_train_size)
+    packet_train = generate_packet_train(ip, ack_numbers, '')
+    ans, unans = sr(packet_train, inter=transmission_interval, timeout=timeout)
+    print(ans.show())
+    for pkt in ans:
+        print(pkt[TCP].ack)
+    print("packet_loss_rate: " + str(len(unans)/packet_train_size))
 
 
 if __name__ == '__main__':
-    generate_packet("google.com", 1000, 'x' * 1500)
+    send_receive_train('google.com', 100, 0.1, True)
