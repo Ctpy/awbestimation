@@ -25,15 +25,15 @@ class CrossTrafficTopo(Topo):
         assert size >= 1, "Topology size must be at least 1!"
 
         # Declare main sender and receiver host
-        left_host = self.addHost('left_host')
-        right_host = self.addHost('right_host')
+        leftHost = self.addHost('leftHost')
+        rightHost = self.addHost('rightHost')
 
         # Declare cross traffic sender and receiver host
         top_host = self.addHost('top_host')
         bottom_host = self.addHost('bottom_host')
 
         # Iterate through path using last node
-        last_node = left_host
+        last_node = leftHost
 
         # Add switches
         for i in range(0, size):
@@ -47,7 +47,7 @@ class CrossTrafficTopo(Topo):
             last_node = sw
 
         # Connect last node with main receiver
-        self.addLink(last_node, right_host)
+        self.addLink(last_node, rightHost)
 
 
 def build_topo(switch_count, duration, capacities, cross_traffic, verbose=False):
