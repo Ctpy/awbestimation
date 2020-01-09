@@ -2,7 +2,6 @@ import os
 import argparse
 import prepare_test
 import run_topology
-import analyze_csv
 import numpy as np
 
 
