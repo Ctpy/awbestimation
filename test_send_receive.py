@@ -1,9 +1,11 @@
 import scapy_util
+import awb_estimation
 import sys
 
 
 def send_receive_train(ip, packet_train, transmission_interval, verbose=True):
-    scapy_util.send_receive_train(ip, packet_train, transmission_interval, verbose)
+
+    scapy_util.send_receive_train(ip, awb_estimation.generate_packet_train(1, packet_train), transmission_interval, verbose)
 
 
 if __name__ == '__main__':
