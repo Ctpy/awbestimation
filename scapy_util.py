@@ -3,7 +3,11 @@ from scapy.packet import Raw
 from scapy.sendrecv import *
 import utility
 import threading
-import queue
+
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 
 
 def generate_packet(ip, ack_number, payload):
