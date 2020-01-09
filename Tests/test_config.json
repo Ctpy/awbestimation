@@ -1,0 +1,12 @@
+{
+  "capacity_range": [
+    10,
+    30
+  ],
+  "capacity_delta": 5,
+  "duration": 10,
+  "switch_count": 3,
+  "cross_traffic": 1.0,
+  "verbose": true,
+  "output": "results.csv"
+}
