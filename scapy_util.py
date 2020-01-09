@@ -38,7 +38,7 @@ def send_receive_train(ip, packet_train, transmission_interval, verbose):
 
 
 def sniff_on_event(event, filter, sniff_queue, verbose):
-    packets = sniff(filter=filter, stop_filter=lambda p: event.is_set(), verbose=verbose)
+    packets = sniff(filter=filter, stop_filter=lambda p: event.is_set())
     sniff_queue.put(packets)
     utility.print_verbose("Stop sniffing", verbose)
     return packets
