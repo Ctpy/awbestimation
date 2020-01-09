@@ -18,29 +18,29 @@ def main():
     # Run setup using input parameters
     run_topology.run_topo(**test_parameters)
 
-    # Convert pcap files to csv
-    if test_parameters['verbose']:
-        print("Converting capture files...")
-    os.system("mkdir {}".format(test_parameters['folder_name']))
-    analyze_csv.convert_pcap(test_parameters['folder_name'], 'receiver.pcap')
-    analyze_csv.convert_pcap(test_parameters['folder_name'], 'sender.pcap')
-    os.system("rm receiver.pcap sender.pcap")
-
-    # Estimate capacities and save log
-    if test_parameters['verbose']:
-        print("Estimating capacity...")
-    results = analyze_csv.get_results(test_parameters['folder_name'], test_parameters['bottleneck'],
-                                      test_parameters['capacities'], size=test_parameters['packet_size'])
-    log_output = open('./{}/log.txt'.format(test_parameters['folder_name']), 'r').read()
-
-    if test_parameters['verbose']:
-        print(log_output)
-
-    if test_parameters['output'] is not None:
-        analyze_csv.write_result_csv(test_parameters['output'], test_parameters['bottleneck'] * 10 ** 6, results)
-
-    if test_parameters['keep_log'] is False:
-        os.system("rm -r ./{}".format(test_parameters['folder_name']))
+    # # Convert pcap files to csv
+    # if test_parameters['verbose']:
+    #     print("Converting capture files...")
+    # os.system("mkdir {}".format(test_parameters['folder_name']))
+    # analyze_csv.convert_pcap(test_parameters['folder_name'], 'receiver.pcap')
+    # analyze_csv.convert_pcap(test_parameters['folder_name'], 'sender.pcap')
+    # os.system("rm receiver.pcap sender.pcap")
+    #
+    # # Estimate capacities and save log
+    # if test_parameters['verbose']:
+    #     print("Estimating capacity...")
+    # results = analyze_csv.get_results(test_parameters['folder_name'], test_parameters['bottleneck'],
+    #                                   test_parameters['capacities'], size=test_parameters['packet_size'])
+    # log_output = open('./{}/log.txt'.format(test_parameters['folder_name']), 'r').read()
+    #
+    # if test_parameters['verbose']:
+    #     print(log_output)
+    #
+    # if test_parameters['output'] is not None:
+    #     analyze_csv.write_result_csv(test_parameters['output'], test_parameters['bottleneck'] * 10 ** 6, results)
+    #
+    # if test_parameters['keep_log'] is False:
+    #     os.system("rm -r ./{}".format(test_parameters['folder_name']))
 
 
 def cross_traffic_test():
