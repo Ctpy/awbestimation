@@ -18,8 +18,8 @@ def generate_packet_train(ip, ack_numbers, payload):
     print("In generate_packet_train")
     print(ack_numbers)
     train = []
-    for i in len(ack_numbers):
-        train.append(generate_packet(ip, ack_numbers[i], payload))
+    for ack_number in ack_numbers:
+        train.append(generate_packet(ip, ack_number, payload))
     return train
 
 
