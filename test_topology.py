@@ -44,11 +44,11 @@ def build_topo(capacities):
     # left_lower host server side
     cmd = 'iperf -s &'
     left_host.popen(cmd)
+    cmd = 'iperf -c 10.0.0.1 -b 1M'
+    right_host.popen(cmd)
     print(left_host.cmdPrint('sudo python awb_estimation.py 10.0.0.2 0.5 10.0'))
     time.sleep(1)
     # right_upper host client side
-    cmd = 'iperf -c 10.0.0.1 -b 1M'
-    right_host.popen(cmd)
     # Clean up
     time.sleep(10)
     net.stop()

@@ -4,6 +4,7 @@ import pcap_util
 import trend
 import subprocess as sp
 import sys
+import utility
 
 
 def estimate_available_bandwidth(target, capacity, resolution, verbose=False, tcpdump_file='timestamp'):
@@ -17,10 +18,10 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False, tc
     :param tcpdump_file -- tcpdump logging file
     :param verbose -- more output
     """
-
-    print_verbose("Start available bandwidth estimation", verbose)
+    capacity *= 1000000 * 8
+    utility.print_verbose("Start available bandwidth estimation", verbose)
     # Config Data here
-    print_verbose("Initializing parameters", verbose)
+    utility.print_verbose("Initializing parameters", verbose)
     current_awb = capacity * 0.75  # start at 75% of capacity
     awb_min = (1 - resolution) * current_awb  # Check if smaller 0
     awb_max = (1 - resolution) * current_awb  # Check if greater 100
@@ -38,32 +39,32 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False, tc
     for i in range(1):
         print("Currently running with these Parameters: ")
         # Send_fleet
-        print_verbose("Generating packet_train", verbose)
+        utility.print_verbose("Generating packet_train", verbose)
         transmission_interval = calculate_transmission_interval(transmission_rate, train_length, packet_size)
-        print_verbose("Transmission_interval: " + str(transmission_interval), verbose)
+        utility.print_verbose("Transmission_interval: " + str(transmission_interval) + ":s", verbose)
         packet_train_numbers = generate_packet_train(current_ack_number, train_length)
         last_ack_number = packet_train_numbers[-1] + 40
         # start tcpdump
-        print_verbose("Generating tcpdump filter", verbose)
+        utility.print_verbose("Generating tcpdump filter", verbose)
         tcpdump_filter = generate_tcpdump_filter(packet_train_numbers)
-        cmd = '-t {} -w {}{}.pcap'.format(tcpdump_filter, tcpdump_file, i)
-        sp.check_output(['sudo', 'tcpdump', cmd])
+        cmd = '{}{}.pcap'.format(tcpdump_file, i)
+        sp.check_output(['tcpdump', '-t', '-w', cmd])
         time.sleep(1)
-        # print_verbose("tcpdump started", verbose)
-        # print_verbose("Start transmission", verbose)
+        # utility.print_verbose("tcpdump started", verbose)
+        # utility.print_verbose("Start transmission", verbose)
         # scapy_util.send_train(target, packet_train_numbers, transmission_interval, verbose)
-        # print_verbose("Transmission finished", verbose)
+        # utility.print_verbose("Transmission finished", verbose)
         # time.sleep(2)
         # # TODO: check adaptability for packet arrival
         # # Process pcap file and analyze csv file
-        # print_verbose("Start Processing pcap file", verbose)
+        # utility.print_verbose("Start Processing pcap file", verbose)
         # csv_file = tcpdump_file.split('.')[0]
-        # print_verbose("Converting pcap to csv", verbose)
+        # utility.print_verbose("Converting pcap to csv", verbose)
         # pcap_util.convert_to_csv(tcpdump_file, csv_file, packet_train_numbers)
-        # print_verbose("Converting finished", verbose)
+        # utility.print_verbose("Converting finished", verbose)
         # timestamps, packet_loss = pcap_util.analyze_csv(csv_file, packet_train_numbers)
         # packet_loss_rate = packet_loss / train_length
-        # print_verbose("Packet_loss_rate: " + str(packet_loss_rate))
+        # utility.print_verbose("Packet_loss_rate: " + str(packet_loss_rate))
         # calculate trend
 
         # trend_state, pct_trend, pdt_trend = trend.calculate_trend(timestamps, packet_loss, train_length)
@@ -148,11 +149,7 @@ def calculate_transmission_interval(transmission_rate, train_length, packet_size
     return (train_length * packet_size) / transmission_rate
 
 
-def print_verbose(msg, verbose):
-    if verbose:
-        print(msg)
-
 
 if __name__ == '__main__':
-    estimate_available_bandwidth(sys.argv[1], float(sys.argv[2]), float(sys.argv[3]), True)
+    # estimate_available_bandwidth(sys.argv[1], float(sys.argv[2]), float(sys.argv[3]), True)
     estimate_available_bandwidth('google.com', 5, 10, True)
