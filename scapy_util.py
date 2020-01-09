@@ -30,6 +30,8 @@ def send_train(ip, packet_train, transmission_interval, verbose):
 
 def send_receive_train(ip, packet_train, transmission_interval, verbose):
     event = threading.Event()
+    print("send_receive_train")
+    print(packet_train)
     filter = "tcp"
     sniff_queue = queue.Queue()
     sniff_thread = threading.Thread(target=sniff_on_event, args=(event, filter, sniff_queue, verbose,))
