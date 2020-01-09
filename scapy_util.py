@@ -33,13 +33,16 @@ def send_receive_train(ip, packet_train, transmission_interval, verbose):
     print("send_receive_train")
     print(packet_train)
     filter = "tcp"
-    sniff_queue = queue.Queue()
-    sniff_thread = threading.Thread(target=sniff_on_event, args=(event, filter, sniff_queue, verbose,))
-    sniff_thread.start()
-    sr(generate_packet_train(ip, packet_train, 'x' * 1452), inter=transmission_interval, verbose=verbose)
-    event.set()
-    packets_list = list(sniff_queue)
-    print(packets_list)
+    try:
+        sniff_queue = queue.Queue()
+        sniff_thread = threading.Thread(target=sniff_on_event, args=(event, filter, sniff_queue, verbose,))
+        sniff_thread.start()
+        sr(generate_packet_train(ip, packet_train, 'x' * 1452), inter=transmission_interval, verbose=verbose)
+        event.set()
+        packets_list = list(sniff_queue)
+        print(packets_list)
+    except Exception as e:
+        event.set()
 
 
 def sniff_on_event(event, filter, sniff_queue, verbose):
