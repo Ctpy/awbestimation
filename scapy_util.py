@@ -38,6 +38,7 @@ def send_receive_train(ip, packet_train, transmission_interval, verbose):
         sniff_thread = threading.Thread(target=sniff_on_event, args=(event, filter, sniff_queue, verbose,))
         sniff_thread.start()
         sr(generate_packet_train(ip, packet_train, 'x' * 1452), inter=transmission_interval, verbose=verbose)
+        print("Sending...")
         event.set()
         packets_list = list(sniff_queue)
         print(packets_list)
@@ -45,9 +46,13 @@ def send_receive_train(ip, packet_train, transmission_interval, verbose):
         event.set()
 
 
+def apply_on_sniff(packet, sniff_queue):
+    print(packet.summary())
+    sniff_queue.put(packet)
+
+
 def sniff_on_event(event, filter, sniff_queue, verbose):
-    packets = sniff(filter=filter, stop_filter=lambda p: event.is_set())
-    sniff_queue.put(packets)
+    packets = sniff(filter=filter, stop_filter=lambda p: event.is_set(), prn=lambda x: apply_on_sniff(x, sniff_queue))
     utility.print_verbose("Stop sniffing", verbose)
     return packets
 
