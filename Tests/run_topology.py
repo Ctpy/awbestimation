@@ -29,25 +29,25 @@ class CrossTrafficTopo(Topo):
         rightHost = self.addHost('rightHost')
 
         # Declare cross traffic sender and receiver host
-        top_host = self.addHost('top_host')
-        bottom_host = self.addHost('bottom_host')
+        topHost = self.addHost('topHost')
+        bottomHost = self.addHost('bottomHost')
 
         # Iterate through path using last node
-        last_node = leftHost
+        lastNode = leftHost
 
         # Add switches
         for i in range(0, size):
             sw = self.addSwitch('sw' + str(i))
             # Left link
-            self.addLink(sw, last_node)
+            self.addLink(sw, lastNode)
             # Bottom Link
-            self.addLink(bottom_host, sw)
+            self.addLink(bottomHost, sw)
             # Upper Link
-            self.addLink(top_host, sw)
-            last_node = sw
+            self.addLink(topHost, sw)
+            lastNode = sw
 
         # Connect last node with main receiver
-        self.addLink(last_node, rightHost)
+        self.addLink(lastNode, rightHost)
 
 
 def build_topo(switch_count, duration, capacities, cross_traffic, verbose=False):
@@ -80,41 +80,41 @@ def build_topo(switch_count, duration, capacities, cross_traffic, verbose=False)
         print('Created topology with ' + str(switch_count) + ' switches.')
         print('Capacity distributions: {}'.format(graph))
 
-    left_host = net.get('left_host')
-    right_host = net.get('right_host')
+    leftHost = net.get('leftHost')
+    rightHost = net.get('rightHost')
 
-    left_host.setIP('10.0.0.1/24')
-    right_host.setIP('10.0.0.2/24')
+    leftHost.setIP('10.0.0.1/24')
+    rightHost.setIP('10.0.0.2/24')
 
-    top_host = net.get('top_host')
-    bottom_host = net.get('bottom_host')
+    topHost = net.get('topHost')
+    bottomHost = net.get('bottomHost')
 
     # Assign IP addresses
     for i in range(0, switch_count):
-        top_host.cmd('ip a add 10.0.{}.1/24 dev top_host-eth{}'.format(i + 1, i))
-        bottom_host.cmd('ip a add 10.0.{}.2/24 dev bottom_host-eth{}'.format(i + 1, i))
+        topHost.cmd('ip a add 10.0.{}.1/24 dev topHost-eth{}'.format(i + 1, i))
+        bottomHost.cmd('ip a add 10.0.{}.2/24 dev bottomHost-eth{}'.format(i + 1, i))
 
     # Remove IPs that were automatically assigned by Mininet
-    top_host.cmd('ip a del 10.0.0.4/8 dev top_host-eth0')
-    bottom_host.cmd('ip a del 10.0.0.1/8 dev bottom_host-eth0')
+    topHost.cmd('ip a del 10.0.0.4/8 dev topHost-eth0')
+    bottomHost.cmd('ip a del 10.0.0.1/8 dev bottomHost-eth0')
 
     # Assign new routing tables
-    set_routing_tables(switch_count, top_host, bottom_host)
+    set_routing_tables(switch_count, topHost, bottomHost)
 
     # Set link capacities
     set_capacities(switch_count, capacities, net)
 
-    left_host.cmd('tc qdisc replace dev left_host-eth0 root fq pacing')
-    left_host.cmd('ethtool -K left_host-eth0 tso off')
-    right_host.cmd('tc qdisc replace dev right_host-eth0 root netem delay 50')
+    leftHost.cmd('tc qdisc replace dev leftHost-eth0 root fq pacing')
+    leftHost.cmd('ethtool -K leftHost-eth0 tso off')
+    rightHost.cmd('tc qdisc replace dev rightHost-eth0 root netem delay 50')
 
     # CLI(net)
 
-    right_host.cmd('iperf -s -t {} &'.format(duration + 2))
+    rightHost.cmd('iperf -s -t {} &'.format(duration + 2))
 
     try:
-        right_host.popen('tcpdump -i right_host-eth0 tcp -w receiver.pcap', stdout=PIPE, stderr=PIPE)
-        left_host.popen('tcpdump -i left_host-eth0 tcp -w sender.pcap', stdout=PIPE, stderr=PIPE)
+        rightHost.popen('tcpdump -i rightHost-eth0 tcp -w receiver.pcap', stdout=PIPE, stderr=PIPE)
+        leftHost.popen('tcpdump -i leftHost-eth0 tcp -w sender.pcap', stdout=PIPE, stderr=PIPE)
         # Link logging
         # sw1 = net.get('sw1')
         # sw1.popen('tcpdump -i sw1-eth4  tcp -w sw1.pcap', stdout=PIPE, stderr=PIPE)
@@ -133,13 +133,13 @@ def build_topo(switch_count, duration, capacities, cross_traffic, verbose=False)
         for i in range(2, switch_count + 1):
             # Receiver (logging: &>> receiver_log.txt)
             cmd = 'iperf -s -t {} -B 10.0.{}.2'.format(duration + 2, i)
-            bottom_host.popen(cmd, stdout=PIPE, stderr=PIPE)
+            bottomHost.popen(cmd, stdout=PIPE, stderr=PIPE)
 
         for i in range(1, switch_count):
             # Sender (logging: &>> sender_log.txt)
             cmd = 'iperf -c 10.0.{}.2 -t {} -B 10.0.{}.1 -b {}M'.format(i + 1, duration + 2, i,
                                                                         capacities[i] * cross_traffic)
-            top_host.popen(cmd, stdout=PIPE, stderr=PIPE)
+            topHost.popen(cmd, stdout=PIPE, stderr=PIPE)
 
         if verbose:
             print('Started cross traffic flows')
@@ -147,8 +147,7 @@ def build_topo(switch_count, duration, capacities, cross_traffic, verbose=False)
     try:
         if verbose:
             print('Running main file transfer...')
-        # left_host.cmd('iperf -t {} -c {} &'.format(duration, right_host.IP()))
-        left_host.cmd('sudo python test_send_receive.py {} {} {}'.format(right_host.IP(), 100, 0.1))
+        leftHost.cmd('iperf -t {} -c {} &'.format(duration, rightHost.IP()))
         time.sleep(duration + 1)
     except (KeyboardInterrupt, Exception) as e:
         if isinstance(e, KeyboardInterrupt):
@@ -162,21 +161,21 @@ def build_topo(switch_count, duration, capacities, cross_traffic, verbose=False)
         cleanup()
 
 
-def set_routing_tables(switch_count, top_host, bottom_host):
+def set_routing_tables(switch_count, topHost, bottomHost):
     """
     Define routing tables to correctly distribute cross traffic
     :param switch_count: Amount of intermediary switches
-    :param top_host: Cross traffic sender host
-    :param bottom_host: Cross traffic receiver host
+    :param topHost: Cross traffic sender host
+    :param bottomHost: Cross traffic receiver host
     """
     # Clear tables
-    top_host.cmd("ip r flush table main")
-    bottom_host.cmd("ip r flush table main")
+    topHost.cmd("ip r flush table main")
+    bottomHost.cmd("ip r flush table main")
 
     # Add new entries
     for i in range(switch_count - 1):
-        top_host.cmd("ip r add 10.0.{}.0/24 dev topHost-eth{} src 10.0.{}.1".format(i + 2, i, i + 1))
-        bottom_host.cmd("ip r add 10.0.{}.0/24 dev bottomHost-eth{} src 10.0.{}.2".format(i + 1, i + 1, i + 2))
+        topHost.cmd("ip r add 10.0.{}.0/24 dev topHost-eth{} src 10.0.{}.1".format(i + 2, i, i + 1))
+        bottomHost.cmd("ip r add 10.0.{}.0/24 dev bottomHost-eth{} src 10.0.{}.2".format(i + 1, i + 1, i + 2))
 
 
 def set_capacities(switch_count, capacities, net):
@@ -187,12 +186,12 @@ def set_capacities(switch_count, capacities, net):
     :param net: Mininet network object
     """
     # Get main sender and receiver
-    left_host = net.get('left_host')
-    right_host = net.get('right_host')
+    leftHost = net.get('leftHost')
+    rightHost = net.get('rightHost')
 
     # Apply traffic limiters to first and last link
-    left_host.cmd('tc qdisc add dev left_host-eth0 root netem rate {}mbit'.format(capacities[0]))
-    right_host.cmd('tc qdisc add dev right_host-eth0 root netem rate {}mbit'.format(capacities[-1]))
+    leftHost.cmd('tc qdisc add dev leftHost-eth0 root netem rate {}mbit'.format(capacities[0]))
+    rightHost.cmd('tc qdisc add dev rightHost-eth0 root netem rate {}mbit'.format(capacities[-1]))
 
     for i in range(0, switch_count):
         # Apply traffic limiter at switch i
@@ -203,6 +202,23 @@ def set_capacities(switch_count, capacities, net):
         # Link after switch
         switch.cmd(
             'tc qdisc add dev sw{}-eth4 root tbf rate {}mbit latency 100ms buffer 16000b'.format(i, capacities[i + 1]))
+
+
+# def plot_topo(topo):
+#     """
+#     Create and show topology plot
+#     :param topo: topology object
+#     """
+#     G = nx.Graph()
+#     for n in topo.g.node:
+#         G.add_node(n)
+#     for n1 in topo.g.edge:
+#         for n2 in topo.g.edge[n1]:
+#            G.add_edge(n1, n2)
+#
+#     nx.draw(G, with_labels=True)
+#     print(G)
+#     plt.show()
 
 
 def run_topo(capacities, duration, cross_traffic, verbose, **kwargs):
