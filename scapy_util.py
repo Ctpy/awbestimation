@@ -32,11 +32,18 @@ def send_receive_train(ip, packet_train_size, transmission_interval, timeout=1, 
     packet_train = generate_packet_train(ip, ack_numbers, '')
     ans, unans = sr(packet_train, inter=transmission_interval, timeout=timeout)
     print(ans.show())
-    for pkt in ans:
-        print(pkt[TCP].ack)
     print("packet_loss_rate: " + str(len(unans)/packet_train_size))
+    return ans
+
+
+def calculate_round_trip_time(packet_train):
+    round_trip_times = []
+    for pkt in packet_train:
+        round_trip_times.append(pkt[0][1].time - pkt[0][0].sent_time)
+    print(round_trip_times)
+    return round_trip_times
 
 
 if __name__ == '__main__':
     # send_receive_train('google.com', 100, 0.1, True)
-    send_receive_train(sys.argv[1], float(sys.argv[2]), float(sys.argv[3]))
+    calculate_round_trip_time(send_receive_train(sys.argv[1], int(sys.argv[2]), float(sys.argv[3])))
