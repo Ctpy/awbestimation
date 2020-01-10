@@ -2,7 +2,7 @@ from scapy.layers.inet import *
 from scapy.packet import Raw
 from scapy.sendrecv import *
 import awb_estimation
-
+import sys
 try:
     import queue
 except ImportError:
@@ -38,4 +38,5 @@ def send_receive_train(ip, packet_train_size, transmission_interval, timeout=1, 
 
 
 if __name__ == '__main__':
-    send_receive_train('google.com', 100, 0.1, True)
+    # send_receive_train('google.com', 100, 0.1, True)
+    send_receive_train(sys.argv[1], float(sys.argv[2]), float(sys.argv[3]))
