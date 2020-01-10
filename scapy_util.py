@@ -33,7 +33,7 @@ def send_receive_train(ip, packet_train_size, transmission_interval, timeout=1, 
     ans, unans = sr(packet_train, inter=transmission_interval, timeout=timeout)
     print(ans.show())
     print("packet_loss_rate: " + str(len(unans)/packet_train_size))
-    return ans
+    return ans, unans
 
 
 def calculate_round_trip_time(packet_train):

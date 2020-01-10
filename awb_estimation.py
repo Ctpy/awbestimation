@@ -5,6 +5,8 @@ import trend
 import subprocess as sp
 import sys
 import utility
+import matplotlib.pyplot as mp
+import globals
 
 
 def estimate_available_bandwidth(target, capacity, resolution, verbose=False, tcpdump_file='timestamp'):
@@ -41,21 +43,23 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False, tc
         # Send_fleet
         utility.print_verbose("Generating packet_train", verbose)
         transmission_interval = calculate_transmission_interval(transmission_rate, train_length, packet_size)
+        if transmission_interval < globals.MIN_TRANSMISSION_INTERVAL:
+            transmission_interval = globals.MIN_TRANSMISSION_INTERVAL
         utility.print_verbose("Transmission_interval: " + str(transmission_interval) + ":s", verbose)
         packet_train_numbers = generate_packet_train(current_ack_number, train_length)
         last_ack_number = packet_train_numbers[-1] + 40
-        # start tcpdump
-        utility.print_verbose("Generating tcpdump filter", verbose)
-        tcpdump_filter = generate_tcpdump_filter(packet_train_numbers)
-        cmd = '{}{}.pcap'.format(tcpdump_file, i)
-        sp.check_output(['tcpdump', '-t', '-w', cmd])
-        time.sleep(1)
-        # utility.print_verbose("tcpdump started", verbose)
-        # utility.print_verbose("Start transmission", verbose)
-        # scapy_util.send_train(target, packet_train_numbers, transmission_interval, verbose)
-        # utility.print_verbose("Transmission finished", verbose)
-        # time.sleep(2)
-        # # TODO: check adaptability for packet arrival
+        utility.print_verbose("Start transmission", verbose)
+        packet_train_response, unanswered_list = scapy_util.send_receive_train(target, packet_train_numbers, transmission_interval, verbose)
+        round_trip_times = scapy_util.calculate_round_trip_time(packet_train_response)
+        utility.print_verbose("Transmission finished", verbose)
+        utility.print_verbose("Packet_loss_rate: " + str(len(unanswered_list/train_length)))
+
+        # Plot round trip times
+        mp.plot([range(len(packet_train_response))], [round_trip_times])
+        mp.ylabel("Round trip time in second")
+        mp.xlabel("Packet index")
+        mp.show()
+        mp.savefig('rtt.png')
         # # Process pcap file and analyze csv file
         # utility.print_verbose("Start Processing pcap file", verbose)
         # csv_file = tcpdump_file.split('.')[0]
@@ -147,7 +151,6 @@ def calculate_train_length(transmission_rate, transmission_interval, packet_size
 
 def calculate_transmission_interval(transmission_rate, train_length, packet_size):
     return (train_length * packet_size) / transmission_rate
-
 
 
 if __name__ == '__main__':
