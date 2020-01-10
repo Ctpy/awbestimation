@@ -99,7 +99,8 @@ def generate_packet_train(starting_number, size):
     """
     Generate Acknowledgement numbers for a packet train.
     """
-
+    print(size)
+    print(type(size))
     train = []
     for i in range(size):
         train.append(1 + starting_number + 40 * i)

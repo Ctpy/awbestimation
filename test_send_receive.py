@@ -1,18 +1,29 @@
 import scapy_util
 import awb_estimation
 import sys
+import matplotlib
 import matplotlib.pyplot as mp
+mp.switch_backend('agg')
+import numpy as np
 
 
-def send_receive_train(ip, packet_train, transmission_interval, verbose=True):
+def send_receive_train(ip, packet_train_length, transmission_interval, verbose=True):
     try:
-        packet_train_response, unanswered = scapy_util.send_receive_train(ip, awb_estimation.generate_packet_train(1, packet_train), transmission_interval, verbose)
+        packet_train_response, unanswered = scapy_util.send_receive_train(ip, packet_train_length, transmission_interval, verbose)
+        for pkt in packet_train_response:
+            print(pkt[1].seq)
+        packet_train_response.sort(key=lambda pkt: pkt[1].seq)
+        for pkt in packet_train_response:
+            print(pkt[1].seq)
         round_trip_times = scapy_util.calculate_round_trip_time(packet_train_response)
-        mp.plot([range(len(packet_train_response))], [round_trip_times])
+        print(len(round_trip_times))
+        print(len(packet_train_response))
+
+        mp.plot(np.array(range(len(packet_train_response))), np.array(round_trip_times))
         mp.ylabel("Round trip time in second")
         mp.xlabel("Packet index")
+        mp.savefig('rtt.png', format='png')
         mp.show()
-        mp.savefig('rtt.png')
     except Exception as e:
         print(e)
         sys.exit()
