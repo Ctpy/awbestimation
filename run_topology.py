@@ -148,7 +148,7 @@ def build_topo(switch_count, duration, capacities, cross_traffic, verbose=False)
         if verbose:
             print('Running main file transfer...')
         # leftHost.cmd('iperf -t {} -c {} &'.format(duration, rightHost.IP()))
-        print(leftHost.cmd('sudo python test_send_receive.py {} {} {}'.format( rightHost.IP(), 100, 0.001)))
+        print(leftHost.cmd('sudo python test_send_receive.py {} {} {}'.format( rightHost.IP(), 100, 0.0000000001)))
         time.sleep(duration + 1)
     except (KeyboardInterrupt, Exception) as e:
         if isinstance(e, KeyboardInterrupt):
