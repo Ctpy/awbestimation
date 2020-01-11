@@ -8,6 +8,7 @@ import utility
 import matplotlib.pyplot as mp
 import globals
 import numpy as np
+
 mp.switch_backend('agg')
 
 
@@ -39,29 +40,30 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
     train_length = 100
     current_ack_number = 1
     # Probe starts here
-    for i in range(1):
+    for i in range(12):
         print("Currently running with these Parameters: ")
         # Send_fleet
         utility.print_verbose("Generating packet_train", verbose)
         transmission_interval = calculate_transmission_interval(transmission_rate, train_length, packet_size)
-        if transmission_interval < globals.MIN_TRANSMISSION_INTERVAL:
-            transmission_interval = globals.MIN_TRANSMISSION_INTERVAL
-            # TODO recalc
+        # if transmission_interval < globals.MIN_TRANSMISSION_INTERVAL:
+        #    transmission_interval = globals.MIN_TRANSMISSION_INTERVAL
+        # TODO recalc
         utility.print_verbose("Transmission_interval: " + str(transmission_interval) + ":s", verbose)
         packet_train_numbers = generate_packet_train(current_ack_number, train_length)
         last_ack_number = packet_train_numbers[-1] + 40
         utility.print_verbose("Start transmission", verbose)
-        packet_train_response, unanswered_list = scapy_util.send_receive_train(target, packet_train_numbers, transmission_interval, verbose)
+        packet_train_response, unanswered_list = scapy_util.send_receive_train(target, packet_train_numbers,
+                                                                               transmission_interval, verbose)
         utility.print_verbose("Transmission finished", verbose)
         # sort train by seq number
         utility.print_verbose("Calculating RTT", verbose)
         packet_train_response.sort(key=lambda packet: packet[1].seq)
         round_trip_times = scapy_util.calculate_round_trip_time(packet_train_response)
-        utility.print_verbose("Packet_loss_rate: " + str(len(unanswered_list)/train_length), verbose)
+        utility.print_verbose("Packet_loss_rate: " + str(len(unanswered_list) / train_length), verbose)
 
         # Plot round trip times
-        plot_results(packet_train_response, round_trip_times)
-
+        plot_results(packet_train_response, round_trip_times, 'rtt{}.png'.format(i))
+        transmission_interval /= 2
         # calculate trend
 
         # trend_state, pct_trend, pdt_trend = trend.calculate_trend(timestamps, packet_loss, train_length)
@@ -137,14 +139,14 @@ def calculate_transmission_interval(transmission_rate, train_length, packet_size
     return (train_length * packet_size) / transmission_rate
 
 
-def plot_results(packet_train_response, round_trip_times):
+def plot_results(packet_train_response, round_trip_times, filename='rtt.png', ):
     mp.plot(np.array(range(len(packet_train_response))), np.array(round_trip_times))
     mp.ylabel("Round trip time in second")
     mp.xlabel("Packet index")
-    mp.savefig('rtt.png', format='png')
+    mp.savefig(filename, format='png')
     mp.show()
 
 
 if __name__ == '__main__':
-    # estimate_available_bandwidth(sys.argv[1], float(sys.argv[2]), float(sys.argv[3]), True)
-    estimate_available_bandwidth('google.com', 5, 10, True)
+    estimate_available_bandwidth(sys.argv[1], float(sys.argv[2]), float(sys.argv[3]), True)
+    # estimate_available_bandwidth('google.com', 5, 10, True)
