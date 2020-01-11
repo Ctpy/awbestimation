@@ -56,7 +56,7 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
         utility.print_verbose("Calculating RTT", verbose)
         packet_train_response.sort(key=lambda packet: packet[1].seq)
         round_trip_times = scapy_util.calculate_round_trip_time(packet_train_response)
-        utility.print_verbose("Packet_loss_rate: " + str(len(unanswered_list/train_length)))
+        utility.print_verbose("Packet_loss_rate: " + str(len(unanswered_list)/len(train_length)), verbose)
 
         # Plot round trip times
         plot_results(packet_train_response, round_trip_times)
