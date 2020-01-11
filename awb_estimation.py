@@ -8,6 +8,7 @@ import utility
 import matplotlib.pyplot as mp
 import globals
 import numpy as np
+mp.switch_backend('agg')
 
 
 def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
