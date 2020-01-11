@@ -7,9 +7,10 @@ import sys
 import utility
 import matplotlib.pyplot as mp
 import globals
+import numpy as np
 
 
-def estimate_available_bandwidth(target, capacity, resolution, verbose=False, tcpdump_file='timestamp'):
+def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
     """
     Estimate the available bandwidth to the given target.
     Higher resolution will impact the performance.
@@ -17,7 +18,6 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False, tc
     :param target -- IP of target to estimate
     :param capacity -- Bottleneck/Link capacity to the target
     :param resolution -- Accuracy of the estimation
-    :param tcpdump_file -- tcpdump logging file
     :param verbose -- more output
     """
     capacity *= 1000000 * 8
@@ -45,30 +45,22 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False, tc
         transmission_interval = calculate_transmission_interval(transmission_rate, train_length, packet_size)
         if transmission_interval < globals.MIN_TRANSMISSION_INTERVAL:
             transmission_interval = globals.MIN_TRANSMISSION_INTERVAL
+            # TODO recalc
         utility.print_verbose("Transmission_interval: " + str(transmission_interval) + ":s", verbose)
         packet_train_numbers = generate_packet_train(current_ack_number, train_length)
         last_ack_number = packet_train_numbers[-1] + 40
         utility.print_verbose("Start transmission", verbose)
         packet_train_response, unanswered_list = scapy_util.send_receive_train(target, packet_train_numbers, transmission_interval, verbose)
-        round_trip_times = scapy_util.calculate_round_trip_time(packet_train_response)
         utility.print_verbose("Transmission finished", verbose)
+        # sort train by seq number
+        utility.print_verbose("Calculating RTT", verbose)
+        packet_train_response.sort(key=lambda packet: packet[1].seq)
+        round_trip_times = scapy_util.calculate_round_trip_time(packet_train_response)
         utility.print_verbose("Packet_loss_rate: " + str(len(unanswered_list/train_length)))
 
         # Plot round trip times
-        mp.plot([range(len(packet_train_response))], [round_trip_times])
-        mp.ylabel("Round trip time in second")
-        mp.xlabel("Packet index")
-        mp.show()
-        mp.savefig('rtt.png')
-        # # Process pcap file and analyze csv file
-        # utility.print_verbose("Start Processing pcap file", verbose)
-        # csv_file = tcpdump_file.split('.')[0]
-        # utility.print_verbose("Converting pcap to csv", verbose)
-        # pcap_util.convert_to_csv(tcpdump_file, csv_file, packet_train_numbers)
-        # utility.print_verbose("Converting finished", verbose)
-        # timestamps, packet_loss = pcap_util.analyze_csv(csv_file, packet_train_numbers)
-        # packet_loss_rate = packet_loss / train_length
-        # utility.print_verbose("Packet_loss_rate: " + str(packet_loss_rate))
+        plot_results(packet_train_response, round_trip_times)
+
         # calculate trend
 
         # trend_state, pct_trend, pdt_trend = trend.calculate_trend(timestamps, packet_loss, train_length)
@@ -107,16 +99,6 @@ def generate_packet_train(starting_number, size):
     return train
 
 
-def generate_tcpdump_filter(packet_train):
-    template = "(tcp[4:4] = {} and tcp[8:4] = 0) or (tcp[4:4] = 0 and tcp[8:4] = {})"
-    tcpdump_filter = ""
-    for i, packet in enumerate(packet_train):
-        if i > 0:
-            tcpdump_filter += " or "
-        tcpdump_filter += template.format(packet, packet)
-    return tcpdump_filter
-
-
 def calculate_parameters(trend, train_length, transmission_interval, min_awb, max_awb, packet_loss_rate, packet_size):
     """
     Adjust awb_estimate parameters according on the result.
@@ -152,6 +134,14 @@ def calculate_train_length(transmission_rate, transmission_interval, packet_size
 
 def calculate_transmission_interval(transmission_rate, train_length, packet_size):
     return (train_length * packet_size) / transmission_rate
+
+
+def plot_results(packet_train_response, round_trip_times):
+    mp.plot(np.array(range(len(packet_train_response))), np.array(round_trip_times))
+    mp.ylabel("Round trip time in second")
+    mp.xlabel("Packet index")
+    mp.savefig('rtt.png', format='png')
+    mp.show()
 
 
 if __name__ == '__main__':

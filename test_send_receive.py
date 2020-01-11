@@ -3,13 +3,17 @@ import awb_estimation
 import sys
 import matplotlib
 import matplotlib.pyplot as mp
+
 mp.switch_backend('agg')
 import numpy as np
+import awb_estimation
 
 
 def send_receive_train(ip, packet_train_length, transmission_interval, verbose=True):
     try:
-        packet_train_response, unanswered = scapy_util.send_receive_train(ip, packet_train_length, transmission_interval, verbose)
+        packet_train_numbers = awb_estimation.generate_packet_train(1, packet_train_length)
+        packet_train_response, unanswered = scapy_util.send_receive_train(ip, packet_train_numbers,
+                                                                          transmission_interval, verbose)
         for pkt in packet_train_response:
             print(pkt[1].seq)
         packet_train_response.sort(key=lambda pkt: pkt[1].seq)

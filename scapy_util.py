@@ -27,12 +27,11 @@ def send_train(ip, packet_train, transmission_interval, verbose):
     send(generate_packet_train(ip, packet_train, 'x' * 1452), inter=transmission_interval, verbose=verbose)
 
 
-def send_receive_train(ip, packet_train_size, transmission_interval, timeout=1, verbose=False):
-    ack_numbers = awb_estimation.generate_packet_train(1, packet_train_size)
-    packet_train = generate_packet_train(ip, ack_numbers, 'x'*1452)
+def send_receive_train(ip, packet_train_numbers, transmission_interval, timeout=1, verbose=False):
+    packet_train = generate_packet_train(ip, packet_train_numbers, 'x'*1452)
     ans, unans = sr(packet_train, inter=transmission_interval, timeout=timeout)
     print(ans.show())
-    print("packet_loss_rate: " + str(len(unans)/packet_train_size))
+    print("packet_loss_rate: " + str(len(unans)/len(packet_train_numbers)))
     return ans, unans
 
 
