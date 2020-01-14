@@ -62,7 +62,6 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
 
         # Plot round trip times
         plot_results(packet_train_response, round_trip_times, 'rtt{}.png'.format(i), True)
-        transmission_interval /= 2
 
         # calculate trend
 
@@ -84,7 +83,7 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
         #     awb_min = current_awb
         current_ack_number = last_ack_number
         # # wait that fleets dont interfere
-        # time.sleep(1)
+        time.sleep(1)
     # Terminate and return
 
     return awb_min, awb_max
