@@ -41,7 +41,7 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
     current_ack_number = 1
     transmission_interval = calculate_transmission_interval(transmission_rate, train_length, packet_size)
     # Probe starts here
-    for i in range(12):
+    for i in range(1):
         print("Currently running with these Parameters: ")
         utility.print_verbose("Transmission_interval: " + str(transmission_interval) + ":s", verbose)
         utility.print_verbose("Generating packet_train", verbose)
