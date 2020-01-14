@@ -80,7 +80,7 @@ def decreasing_trend_filter(timestamps, packet_loss, train_length):
     timestamps_np = np.array(timestamps)
     timestamps_np = np.delete(timestamps_np, decreasing_trend_index_list)
 
-    return timestamps_np
+    return timestamps_np.tolist()
 
 
 def robust_regression_filter(timestamps, packet_loss, train_length):
