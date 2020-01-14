@@ -54,8 +54,7 @@ def pdt_metric(timestamps, packet_loss, train_length):
 
 
 def decreasing_trend_filter(timestamps, packet_loss, train_length):
-    pdt_flag = ""
-    pct_flag = ""
+
     # search for burst
     mean = np.mean(timestamps)
     standard_derivation = compute_standard_derivation(timestamps)
@@ -76,32 +75,12 @@ def decreasing_trend_filter(timestamps, packet_loss, train_length):
         if decreasing_trend:
             decreasing_trend_index_list.append(burst_packet_index_list[i])
 
-    # remove all bursts
-    for i in range(len(decreasing_trend_index_list)):
-        for j in range(globals.DT_CONSECUTIVE):
-            del timestamps[
-                decreasing_trend_index_list[i]:decreasing_trend_index_list[i] + globals.DT_CONSECUTIVE]
+    burst_packet_index_list.append(decreasing_trend_index_list)
+    list.sort(burst_packet_index_list)
+    timestamps_np = np.array(timestamps)
+    timestamps_np = np.delete(timestamps_np, decreasing_trend_index_list)
 
-    # pct
-
-    if pct_metric(timestamps, train_length - len(timestamps), len(timestamps) > globals.BOUNDARY_PCT * 1.1):
-        pct_flag = "INCR"
-    elif pct_metric(timestamps, train_length - len(timestamps), len(timestamps) > globals.BOUNDARY_PCT * 0.9):
-        pct_flag = "UNCL"
-    else:
-        pct_flag = "NOCHANGE"
-    # pdt
-
-    if pdt_metric(timestamps, train_length - len(timestamps), len(timestamps) > globals.BOUNDARY_PDT * 1.1):
-        pdt_flag = "INCR"
-    elif pdt_metric(timestamps, train_length - len(timestamps), len(timestamps) > globals.BOUNDARY_PDT * 0.9):
-        pdt_flag = "UNCL"
-    else:
-        pdt_flag = "NOCHANGE"
-
-    # return trend
-
-    return pct_flag, pdt_flag
+    return timestamps_np
 
 
 def robust_regression_filter(timestamps, packet_loss, train_length):

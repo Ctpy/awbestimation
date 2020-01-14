@@ -65,6 +65,10 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
 
         # calculate trend
 
+        filtered_timestamps = trend.decreasing_trend_filter(round_trip_times, unanswered_list, train_length)
+        utility.print_verbose("Filtered Timestamps", verbose)
+        utility.print_verbose(filtered_timestamps, verbose)
+        plot_results(filtered_timestamps.size, filtered_timestamps, 'rtt_filtered{}.png'.format(i), True)
         # trend_state, pct_trend, pdt_trend = trend.calculate_trend(timestamps, packet_loss, train_length)
         # trend_list.append(trend_state)
         # pct_trend_list.append(pct_trend)
@@ -146,6 +150,7 @@ def plot_results(packet_train_response, round_trip_times, filename='rtt.png', cl
     mp.show()
     if clear:
         mp.clf()
+
 
 if __name__ == '__main__':
     estimate_available_bandwidth(sys.argv[1], float(sys.argv[2]), float(sys.argv[3]), True)
