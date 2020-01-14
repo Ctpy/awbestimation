@@ -59,8 +59,8 @@ def decreasing_trend_filter(timestamps, packet_loss, train_length):
     mean = np.mean(timestamps)
     standard_derivation = compute_standard_derivation(timestamps)
     burst_packet_index_list = []
-    print("Mean: " + mean)
-    print("Standard Derivation: " + standard_derivation)
+    print("Mean: " + str(mean))
+    print("Standard Derivation: " + str(standard_derivation))
     for i in range(len(timestamps)):
         if mean + standard_derivation < timestamps[i]:
             burst_packet_index_list.append(i)
@@ -70,13 +70,15 @@ def decreasing_trend_filter(timestamps, packet_loss, train_length):
     decreasing_trend_index_list = []
     for i in range(len(burst_packet_index_list)):
         decreasing_trend = True
+        tmp = []
         last_packet_rtt = timestamps[burst_packet_index_list[i]]
-        for j in range(globals.DT_CONSECUTIVE):
+        for j in range(1, 1 +  globals.DT_CONSECUTIVE):
             if last_packet_rtt < timestamps[burst_packet_index_list[i] + j]:
                 decreasing_trend = False
                 break
+            tmp.append(burst_packet_index_list[i] + j)
         if decreasing_trend:
-            decreasing_trend_index_list.append(burst_packet_index_list[i])
+            decreasing_trend_index_list.extend(tmp)
     print(decreasing_trend_index_list)
     burst_packet_index_list.append(decreasing_trend_index_list)
     list.sort(burst_packet_index_list)

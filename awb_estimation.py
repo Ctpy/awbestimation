@@ -144,7 +144,7 @@ def calculate_transmission_interval(transmission_rate, train_length, packet_size
 
 
 def plot_results(packet_train_response, round_trip_times, filename='rtt.png', clear=False):
-    mp.plot(np.array(range(len(packet_train_response))), np.array(round_trip_times))
+    mp.plot(np.array(range(len(packet_train_response))), np.array(round_trip_times), 'o')
     mp.ylabel("Round trip time in second")
     mp.xlabel("Packet index")
     mp.savefig(filename, format='png')
