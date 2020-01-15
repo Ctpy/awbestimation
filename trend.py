@@ -7,25 +7,13 @@ import matplotlib.pyplot as mp
 def calculate_trend(timestamps, packet_loss, train_length):
     np.set_printoptions(suppress=True)
     # Evaluate timestamps
-
+    # TODO
     # Decreasing Trend due to buffering DT filter to filter out large bursts
-    pct_metric_flag, pdt_metric_flag = decreasing_trend_filter(timestamps, packet_loss, train_length)
-
-    if pct_metric_flag == "INCR" and pdt_metric_flag == "INCR":
-        return "INCR", pct_metric_flag, pdt_metric_flag
 
     # Robust Regression filter to filter out small bursts by using Iteratively Re-weighted Least Square method (IRLS)
 
-    pct_metric_flag, pdt_metric_flag = robust_regression_filter(timestamps, packet_loss, train_length)
     # Evaluate trend
-    if pct_metric_flag == "INCR" and pdt_metric_flag == "INCR":
-        return "INCR", pct_metric_flag, pdt_metric_flag
-    elif pct_metric_flag == "INCR" and pdt_metric_flag == "UNCL":
-        return "INCR", pct_metric_flag, pdt_metric_flag
-    elif pct_metric_flag == "UNCL" and pdt_metric_flag == "INCR":
-        return "INCR", pct_metric_flag, pdt_metric_flag
-    else:
-        return "NOCHANGE", pct_metric_flag, pdt_metric_flag
+    return
 
 
 def pct_metric(timestamps, packet_loss, train_length):
@@ -53,11 +41,11 @@ def pdt_metric(timestamps, packet_loss, train_length):
     return -1
 
 
-def decreasing_trend_filter(timestamps, packet_loss, train_length):
+def decreasing_trend_filter(timestamps):
 
     # search for burst
     mean = np.mean(timestamps)
-    standard_derivation = compute_standard_derivation(timestamps)
+    standard_derivation = np.std(timestamps)
     burst_packet_index_list = []
     print("Mean: " + str(mean))
     print("Standard Derivation: " + str(standard_derivation))
@@ -72,7 +60,7 @@ def decreasing_trend_filter(timestamps, packet_loss, train_length):
         decreasing_trend = True
         tmp = []
         last_packet_rtt = timestamps[burst_packet_index_list[i]]
-        for j in range(1, 1 +  globals.DT_CONSECUTIVE):
+        for j in range(1, 1 + globals.DT_CONSECUTIVE):
             if last_packet_rtt < timestamps[burst_packet_index_list[i] + j]:
                 decreasing_trend = False
                 break
@@ -81,6 +69,8 @@ def decreasing_trend_filter(timestamps, packet_loss, train_length):
             decreasing_trend_index_list.extend(tmp)
     print(decreasing_trend_index_list)
     burst_packet_index_list.append(decreasing_trend_index_list)
+    print(type(burst_packet_index_list))
+
     list.sort(burst_packet_index_list)
     timestamps_np = np.array(timestamps)
     timestamps_np = np.delete(timestamps_np, decreasing_trend_index_list)
@@ -91,243 +81,12 @@ def decreasing_trend_filter(timestamps, packet_loss, train_length):
 def robust_regression_filter(timestamps, packet_loss, train_length):
     iter_limit = 10
     columns = 2
-    x_matrix = np.zeros(shape=(train_length - packet_loss, columns))
-    y_matrix = np.array(timestamps)
-    residual = 0.0
-    q_matrix = np.zeros(shape=(train_length - packet_loss, columns))
-    r_matrix = np.zeros(shape=(columns, columns))
-    inv_r = np.zeros(shape=(columns, columns))
-    e_matrix = np.zeros(shape=(train_length - packet_loss, columns))
-    weights = []
-    adjacent_factor = np.zeros(shape=(train_length - packet_loss, 1))
-    r_adjacent_factor = np.zeros(shape=(train_length - packet_loss, 1))
-    j = 0
-    for i in range(train_length):
-        if timestamps[i] is None:
-            continue
-        else:
-            x_matrix[i, 0] = 1.0
-            x_matrix[i, 1] = i + 1
-            j += 1
-    print(x_matrix)
-    # q_matrix, r_matrix = np.linalg.qr(x_matrix)
-    r_matrix, q_matrix = qr_decomposition_modified(x_matrix)
-    print(q_matrix)
-    print(r_matrix)
-    e_matrix = compute_q_matrix(x_matrix, np.linalg.inv(r_matrix))
-    print(e_matrix)
-    adjacent_factor = compute_adjacent_factor(e_matrix)
-    print(adjacent_factor)
-    print("STD")
-    print(np.std(y_matrix))
-    # print(compute_standard_derivation(y_matrix))
-    m, c, sigma_a, sigma_b, chi_square = least_square_fit(y_matrix)
-    print("m: {} | c: {} | sigma_a: {} | sigma_b: {} | chi_square: {}".format(m, c, sigma_a, sigma_b, chi_square))
-    small_derivation = 10e-6 * compute_standard_derivation(y_matrix)
-    if small_derivation == 0:
-        small_derivation = 1
-    m_re_weighted = 0
-    c_re_weighted = 0
-    while iter == 0 or m - m_re_weighted > 1.4901e-08 * max(abs(m),
-                                                            abs(m_re_weighted)) or c - c_re_weighted > 1.4901e-08 * max(
-            abs(c), c_re_weighted):
-        if iter + 1 > iter_limit:
-            break
-
-        # compute residuals
-        residual_vector = []
-        for i in range(len(y_matrix)):
-            residual_vector.append(adjacent_factor[i] * (y_matrix[i] - (c + x_matrix[i][1] * m)))
-
-        new_scale_factor = compute_median_absolute_derivation_sigma(np.array(residual_vector))
-
-        for i in range(len(y_matrix)):
-            residual = residual_vector[i] / max(new_scale_factor, small_derivation)
-            if abs(residual) < 1:
-                weights.append((1 - residual ** 2) ** 2)
-            else:
-                weights.append(0)
-        m_re_weighted = m
-        c_re_weighted = c
-
-        c, m = weighted_least_square_fit(y_matrix, weights)
-
-    # Filter timestamps with weights
-    filtered_timestamps = []
-    for i in range(len(timestamps)):
-        if weights[i] >= 0.7:
-            filtered_timestamps.append(timestamps[i])
-
-    if pct_metric(filtered_timestamps, train_length - len(filtered_timestamps), len(filtered_timestamps) > globals.BOUNDARY_PCT * 1.1):
-        pct_flag = "INCR"
-    elif pct_metric(filtered_timestamps, train_length - len(filtered_timestamps), len(filtered_timestamps) > globals.BOUNDARY_PCT * 0.9):
-        pct_flag = "UNCL"
-    else:
-        pct_flag = "NOCHANGE"
-    # pdt
-
-    if pdt_metric(filtered_timestamps, train_length - len(filtered_timestamps), len(filtered_timestamps) > globals.BOUNDARY_PDT * 1.1):
-        pdt_flag = "INCR"
-    elif pdt_metric(filtered_timestamps, train_length - len(filtered_timestamps), len(filtered_timestamps) > globals.BOUNDARY_PDT * 0.9):
-        pdt_flag = "UNCL"
-    else:
-        pdt_flag = "NOCHANGE"
+    # TODO
+    # OLS
 
     # return trend
 
-    return pct_flag, pdt_flag
-
-
-def least_square_fit(y_matrix):
-    m = 0.0
-    chi_square = 0.0
-    sum_x = 0.0
-    sum_y = 0.0
-    error_2 = 0.0
-    x_matrix = range(1, len(y_matrix) + 1)
-    for i in range(len(y_matrix)):
-        sum_x += x_matrix[i]
-        sum_y += y_matrix[i]
-    x_average = sum_x / len(y_matrix)
-
-    for i in range(len(y_matrix)):
-        error = x_matrix[i] - x_average
-        error_2 += error ** 2
-        m += error * y_matrix[i]
-
-    m /= error_2
-    c = (sum_y - sum_x * m) / len(y_matrix)
-    sigma_a = math.sqrt((1.0 + sum_x ** 2 / (len(y_matrix) * error_2)) / len(y_matrix))
-    sigma_b = math.sqrt(1.0 / error_2)
-
-    for i in range(len(y_matrix)):
-        chi_square += (y_matrix[i] - c - m * x_matrix[i]) ** 2
-    sig_refactor = math.sqrt(chi_square / (len(y_matrix) - 2))
-    sigma_a *= sig_refactor
-    sigma_b *= sig_refactor
-    return m, c, sigma_a, sigma_b, chi_square
-
-
-def weighted_least_square_fit(y_matrix, weights):
-    x_matrix = range(1, len(y_matrix) + 1)
-    sum_x = 0.0
-    sum_y = 0.0
-    sum_x_y = 0.0
-    sum_x_x = 0.0
-    sum_weights = 0.0
-    for i in range(len(y_matrix)):
-        sum_x += x_matrix[i] * weights[i]
-        sum_y += y[i] * weights[i]
-        sum_x_x += x_matrix[i] ** 2 * weights[i]
-        sum_x_y += x_matrix[i] * y_matrix[i] * weights[i]
-        sum_weights += weights
-
-    factor = sum_weights * sum_x_x - sum_x ** 2
-    c = (sum_x_x * sum_y - sum_x * sum_x_y) / factor
-    m = (sum_weights * sum_x_y - sum_x * sum_y) / factor
-
-    return c, m
-
-
-def qr_decomposition_modified(matrix):
-    rows, columns = matrix.shape
-    r_matrix = np.zeros(shape=(columns, columns))
-    q_matrix = np.zeros(shape=matrix.shape)
-    a_matrix = np.zeros(shape=matrix.shape)
-    b_matrix = np.zeros(shape=matrix.shape)
-
-    for i in range(rows):
-        for j in range(columns):
-            b_matrix[i, j] = matrix[i, columns - 1 - j]
-
-    r_matrix, q_matrix = gram_schmidt_modified(a_matrix, b_matrix, r_matrix, rows, columns)
-    return -r_matrix, -q_matrix
-
-
-def dot_product(u_matrix, v_matrix, k, j, rows):
-    sum = 0.0
-    for i in range(rows):
-        sum += u_matrix[i, k] * v_matrix[i, j]
-    return sum
-
-
-def norm_l2(x_matrix, column, rows):
-    sum = 0.0
-    for i in range(rows):
-        sum += (x_matrix[i, column] * x_matrix[i, column])
-    return math.sqrt(sum)
-
-
-def gram_schmidt_modified(q_matrix, x_matrix, r_matrix, rows, columns):
-    tmp_matrix = x_matrix.copy()
-
-    for i in range(columns):
-        r_matrix[i, i] = norm_l2(tmp_matrix, i, rows)
-
-        if r_matrix[i, i] == 0.0:
-            break
-        else:
-            for j in range(rows):
-                result = tmp_matrix[j, i] / r_matrix[i, i]
-                print(result)
-                q_matrix[j, i] = result
-
-        for k in range(i + 1, columns):
-            r_matrix[i, k] = dot_product(tmp_matrix, q_matrix, k, i, rows)
-            for j in range(rows):
-                tmp_matrix[j, k] -= r_matrix[i, k] * q_matrix[j, i]
-    return r_matrix, q_matrix
-
-
-def compute_q_matrix(x_matrix, r_matrix):
-    rows, columns = x_matrix.shape
-    e_matrix = np.zeros(shape=x_matrix.shape)
-    for i in range(rows):
-        for j in range(2):
-            for k in range(2):
-                e_matrix[i, j] += x_matrix[i, 1 - k] * r_matrix[k, j]
-    return e_matrix
-
-
-def compute_adjacent_factor(e_matrix):
-    adjacent_factor = []
-    rows, columns = e_matrix.shape
-    for i in range(rows):
-        factor = 0
-        if (e_matrix[i, 0] * e_matrix[i, 0] + e_matrix[i, 1] * e_matrix[i, 1]) > 0.9999:
-            factor = 1.0 / math.sqrt(1 - 0.9999)
-        else:
-            factor = 1.0 / math.sqrt(1 - (e_matrix[i, 0] * e_matrix[i, 0] + e_matrix[i, 1] * e_matrix[i, 1]))
-        adjacent_factor.append(factor)
-    return np.array(adjacent_factor)
-
-
-def compute_median_absolute_derivation_sigma(data_vector):
-    residual_data_vector = []
-    for i in range(len(data_vector)):
-        residual_data_vector.append(abs(data_vector[i]))
-    residual_data_vector = np.sort(residual_data_vector)
-    if len(data_vector) % 2 == 0:
-        return residual_data_vector[(len(data_vector) - 1) / 2] / 0.675
-    else:
-        return (residual_data_vector[(len(data_vector) - 1) / 2] + residual_data_vector[
-            (len(data_vector) + 1) / 2]) / 2.0 / 0.675
-
-
-def compute_standard_derivation(data_set):
-    mean = 0.0
-    variance = 0.0
-    for i in range(len(data_set)):
-        mean += data_set[i]
-    print("Mean Sum: " + str(mean))
-    print("len: " + str(len(data_set)))
-    mean /= (len(data_set))
-    print("Mean: " + str(mean))
-    for i in range(len(data_set)):
-        variance += (data_set[i] - mean) ** 2
-    variance /= (len(data_set))
-    print("Variance: " + str(variance))
-    return math.sqrt(variance)
+    return
 
 
 if __name__ == '__main__':
@@ -378,4 +137,4 @@ if __name__ == '__main__':
     # mod = stm.WLS(np.array(y), np.array(x), weights=1./w**2)
     # res = mod.fit().params
     print(len(y))
-    robust_regression_filter(y, 0, 100)
+    decreasing_trend_filter(y)

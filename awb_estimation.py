@@ -1,8 +1,6 @@
 import time
 import scapy_util
-import pcap_util
 import trend
-import subprocess as sp
 import sys
 import utility
 import matplotlib.pyplot as mp
@@ -70,22 +68,7 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
         utility.print_verbose(filtered_timestamps, verbose)
         utility.print_verbose("Filtered out: {}".format(len(round_trip_times) - len(filtered_timestamps)), verbose)
         plot_results(filtered_timestamps, filtered_timestamps, 'rtt_filtered{}.png'.format(i), True)
-        # trend_state, pct_trend, pdt_trend = trend.calculate_trend(timestamps, packet_loss, train_length)
-        # trend_list.append(trend_state)
-        # pct_trend_list.append(pct_trend)
-        # pdt_trend_list.append(pdt_trend)
-        #
-        # # fabprobe logic
-        # if i > 1:
-        #     if (trend_list[-1] == "NOCHANGE" or trend_list[-1] == "UNCL") and trend_list[-2] == "INCR":
-        #         return awb_min, awb_max
-        #
-        # # Adjust state variables
-        # current_awb, train_length, transmission_interval = calculate_parameters(trend_state, train_length, transmission_interval, awb_min, awb_max, packet_loss_rate, packet_size)
-        # if current_awb > awb_max:
-        #     awb_max = current_awb
-        # elif current_awb < awb_min:
-        #     awb_min = current_awb
+
         current_ack_number = last_ack_number
         # # wait that fleets dont interfere
         time.sleep(1)
@@ -118,21 +101,10 @@ def calculate_parameters(trend, train_length, transmission_interval, min_awb, ma
     :param packet_loss_rate - packet loss rate
     :param packet_size -- size of each packet in Byte
     """
-    new_awb = 0.0
-    if trend == "INCR":
-        new_awb = min_awb
-        # Ask: increase transmission_interval or decrease train length?
-        if packet_loss_rate > 0.5:
-            train_length = calculate_train_length(new_awb, transmission_interval, packet_size)
-        else:
-            transmission_interval = calculate_transmission_interval(new_awb, train_length, packet_size)
-    elif trend == "UNLC" or trend == "NOCHANGE":
-        # increase awb
-        if packet_loss_rate > 0.5:
-            train_length = calculate_train_length(new_awb, transmission_interval, packet_size)
-        else:
-            transmission_interval = calculate_transmission_interval(new_awb, train_length, packet_size)
-    return new_awb, train_length, transmission_interval
+
+    # TODO
+
+    return
 
 
 def calculate_train_length(transmission_rate, transmission_interval, packet_size):
