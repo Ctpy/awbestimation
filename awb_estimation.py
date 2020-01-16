@@ -52,6 +52,7 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
         packet_train_numbers = generate_packet_train(current_ack_number, train_length)
         tcpdump_filter = generate_tcpdump_filter(packet_train_numbers)
         p = subprocess.Popen(['tcpdump', 'tcp', tcpdump_filter, '-w', 'sender2.pcap'], stdout=subprocess.PIPE)
+        print(p)
         time.sleep(1)
         last_ack_number = packet_train_numbers[-1] + 40
         utility.print_verbose("Start transmission", verbose)
@@ -69,7 +70,7 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
 
         # calculate trend
 
-        filtered_timestamps = trend.decreasing_trend_filter(round_trip_times, unanswered_list, train_length)
+        filtered_timestamps = trend.decreasing_trend_filter(round_trip_times)
         utility.print_verbose("Filtered Timestamps", verbose)
         utility.print_verbose(filtered_timestamps, verbose)
         utility.print_verbose("Filtered out: {}".format(len(round_trip_times) - len(filtered_timestamps)), verbose)

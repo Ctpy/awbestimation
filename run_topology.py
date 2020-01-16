@@ -112,6 +112,16 @@ def build_topo(switch_count, duration, capacities, cross_traffic, verbose=False)
 
     rightHost.cmd('iperf -s -t {} &'.format(duration + 2))
 
+    try:
+        rightHost.popen('tcpdump -i rightHost-eth0 tcp -w receiver.pcap', stdout=PIPE, stderr=PIPE)
+        leftHost.popen('tcpdump -i leftHost-eth0 tcp -w sender.pcap', stdout=PIPE, stderr=PIPE)
+        # Link logging
+        # sw1 = net.get('sw1')
+        # sw1.popen('tcpdump -i sw1-eth4  tcp -w sw1.pcap', stdout=PIPE, stderr=PIPE)
+    except Exception as e:
+        print('Error on starting tcpdump\n{}'.format(e))
+        sys.exit(1)
+
     # Start cross traffic connections
     if cross_traffic != 0:
         for i in range(2, switch_count + 1):
