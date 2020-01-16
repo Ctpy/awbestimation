@@ -39,15 +39,15 @@ class CrossTrafficTopo(Topo):
         for i in range(0, size):
             sw = self.addSwitch('sw' + str(i))
             # Left link
-            self.addLink(sw, lastNode)
+            self.addLink(sw, lastNode, delay='50ms')
             # Bottom Link
-            self.addLink(bottomHost, sw, delay='5ms')
+            self.addLink(bottomHost, sw, delay='50ms')
             # Upper Link
-            self.addLink(topHost, sw, delay='5ms')
+            self.addLink(topHost, sw, delay='50ms')
             lastNode = sw
 
         # Connect last node with main receiver
-        self.addLink(lastNode, rightHost)
+        self.addLink(lastNode, rightHost, delay='50ms')
 
 
 def build_topo(switch_count, duration, capacities, cross_traffic, verbose=False):
