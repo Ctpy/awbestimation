@@ -28,12 +28,17 @@ def analyze_csv(input_file, id_list):
     packet_loss = 0
     for i in id_list:
         try:
-            pair = (data[data['tcp.seq'] == i], data[data['tcp.ack'] == i])
-            time_frame_sent = pair[0]['_ws.col.Time']
-            time_frame_received = pair[1]['_ws.col.Time']
+            pair = (data[data['tcp.ack'] == i], data[data['tcp.seq'] == i])
+            time_frame_sent = pair[0]['_ws.col.Time'].item()
+            # print(time_frame_sent)
+            time_frame_received = pair[1]['_ws.col.Time'].item()
+            # print(time_frame_received)
+            # print(str(i) + ": "+ str(time_frame_received - time_frame_sent))
             round_trip_time = abs(time_frame_received - time_frame_sent)
-            timestamp = (time_frame_sent, time_frame_received, round_trip_time)
+            print(str(i) + ": (" + str(time_frame_sent) + "," + str(round_trip_time) + ")")
+            timestamp = (time_frame_sent, round_trip_time)
             timestamps.append(timestamp)
+            #print(round_trip_time)
         except:
             packet_loss += 1
 

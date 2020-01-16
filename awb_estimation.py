@@ -74,16 +74,25 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
         utility.print_verbose("Packet_loss_rate: " + str(len(unanswered_list) / train_length), verbose)
         time.sleep(1)
         pcap_util.convert_to_csv('sender2.pcap', 'sender2.csv', packet_train_numbers)
+        timestamps_tcpdump, packet_l = pcap_util.analyze_csv('sender2.csv', packet_train_numbers)
         # Plot round trip times
-        plot_results(packet_train_response, round_trip_times, 'rtt{}.png'.format(i), True)
-
+        # plot_results(packet_train_response, round_trip_times, 'rtt{}.png'.format(i), True)
+        #mp.plot(*zip(*np.array([(sent_time, rtt_tcpdump) for sent_time,r,rtt_tcpdump in timestamps_tcpdump].sort(key=lambda x:x[0]))))
+        round_trip_times.sort(key=lambda x:x[0])
+        mp.plot(*zip(*timestamps_tcpdump), linestyle= '--', color='red', label="tcpdump")
+        mp.plot(*zip(*round_trip_times), linestyle=':', color='blue', label="scapy")
+        mp.ylabel("Round trip time in second")
+        mp.xlabel("Time in seconds")
+        mp.legend(loc='upper right')
+        mp.savefig('rtt.svg', format='svg')
+        mp.show()
         # calculate trend
 
-        filtered_timestamps = trend.decreasing_trend_filter(round_trip_times)
-        utility.print_verbose("Filtered Timestamps", verbose)
-        utility.print_verbose(filtered_timestamps, verbose)
-        utility.print_verbose("Filtered out: {}".format(len(round_trip_times) - len(filtered_timestamps)), verbose)
-        plot_results(filtered_timestamps, filtered_timestamps, 'rtt_filtered{}.png'.format(i), True)
+        # filtered_timestamps = trend.decreasing_trend_filter(round_trip_times)
+        # utility.print_verbose("Filtered Timestamps", verbose)
+        # utility.print_verbose(filtered_timestamps, verbose)
+        # utility.print_verbose("Filtered out: {}".format(len(round_trip_times) - len(filtered_timestamps)), verbose)
+        #plot_results(filtered_timestamps, filtered_timestamps, 'rtt_filtered{}.png'.format(i), True)
 
         current_ack_number = last_ack_number
         # # wait that fleets dont interfere
@@ -144,7 +153,7 @@ def calculate_transmission_interval(transmission_rate, train_length, packet_size
 def plot_results(packet_train_response, round_trip_times, filename='rtt.png', clear=False):
     mp.plot(np.array(range(len(packet_train_response))), np.array(round_trip_times), 'o')
     mp.ylabel("Round trip time in second")
-    mp.xlabel("Packet index")
+    mp.xlabel("Time in seconds")
     mp.savefig(filename, format='png')
     mp.show()
     if clear:
