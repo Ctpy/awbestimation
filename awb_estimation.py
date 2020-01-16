@@ -2,6 +2,7 @@ import time
 import scapy_util
 import trend
 import sys
+import pcap_util
 import utility
 import matplotlib.pyplot as mp
 from subprocess import PIPE
@@ -51,7 +52,14 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
         # TODO recalc
         packet_train_numbers = generate_packet_train(current_ack_number, train_length)
         tcpdump_filter = generate_tcpdump_filter(packet_train_numbers)
-        p = subprocess.Popen(['tcpdump', 'tcp', tcpdump_filter, '-w', 'sender2.pcap'], stdout=subprocess.PIPE)
+        print(tcpdump_filter)
+        template = '-i leftHost-eth0 -tt -U  -w sender2.pcap'
+        template = template.split(' ')
+        print(template)
+        f = ['tcpdump']
+        f.extend(template)
+        f.extend([tcpdump_filter])
+        p = subprocess.Popen(f, stdout=subprocess.PIPE)
         print(p)
         time.sleep(1)
         last_ack_number = packet_train_numbers[-1] + 40
@@ -64,7 +72,8 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
         packet_train_response.sort(key=lambda packet: packet[1].seq)
         round_trip_times = scapy_util.calculate_round_trip_time(packet_train_response)
         utility.print_verbose("Packet_loss_rate: " + str(len(unanswered_list) / train_length), verbose)
-
+        time.sleep(1)
+        pcap_util.convert_to_csv('sender2.pcap', 'sender2.csv', packet_train_numbers)
         # Plot round trip times
         plot_results(packet_train_response, round_trip_times, 'rtt{}.png'.format(i), True)
 

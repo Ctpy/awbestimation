@@ -10,11 +10,9 @@ def convert_to_csv(filename, outputfile, packet_train):
         if i > 0:
             filter_string += " or "
         filter_string += template.format(packet, packet)
-    # print(filter)
+    print(filter)
     print("Converting pcap to csv format...")
-    cmd = """tshark -r {} -T fields -e frame.number -e frame.time -e eth.src -e eth.dst -e ip.src -e ip.dst -e 
-    ip.proto -e tcp.ack -e tcp.flags -e tcp.seq -o tcp.relative_sequence_numbers:FALSE -E      header=y -E 
-    separator=, -E quote=d -E occurrence=f -Y "{}" > {}""".format(
+    cmd = """tshark -r {} -T fields -e frame.number -e _ws.col.Time -e eth.src -e eth.dst -e ip.src -e ip.dst -e ip.proto -e tcp.ack -e tcp.flags -e tcp.seq -o tcp.relative_sequence_numbers:FALSE -E header=y -E separator=, -E quote=d -E occurrence=f -Y "{}" > {}""".format(
         filename, filter_string, outputfile)
     try:
         res = subprocess.check_output(['bash', '-c', cmd])

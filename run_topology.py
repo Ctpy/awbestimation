@@ -41,9 +41,9 @@ class CrossTrafficTopo(Topo):
             # Left link
             self.addLink(sw, lastNode)
             # Bottom Link
-            self.addLink(bottomHost, sw)
+            self.addLink(bottomHost, sw, delay='5ms')
             # Upper Link
-            self.addLink(topHost, sw)
+            self.addLink(topHost, sw, delay='5ms')
             lastNode = sw
 
         # Connect last node with main receiver
