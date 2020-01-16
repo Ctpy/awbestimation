@@ -21,54 +21,20 @@ def convert_to_csv(filename, outputfile, packet_train):
     print(res)
 
 
-def analyze_csv(file, id_list):
-    # TODO: Re implement
+def analyze_csv(input_file, id_list):
     print("Analyse csv file...")
-    data = pd.read_csv(file)
+    data = pd.read_csv(input_file)
     timestamps = []
-    average = 0
     packet_loss = 0
-    arrival = []
-    departure = []
     for i in id_list:
-        # print("currently analyzing " + str(i))
         try:
             pair = (data[data['tcp.seq'] == i], data[data['tcp.ack'] == i])
-            time_frame = str(pair[0]['frame.time'])
-            # print("Frame time1" + time)
-            time1 = time_frame.split(' ')
-            new_time = [time1[4], time1[6], time1[7], time1[8]]
-            time_frame = str(pair[1]['frame.time'])
-            time2 = time_frame.split(' ')
-            # print("Time 1:" + str(time1))
-            # print(new_time)
-            # print("Time 2:" + str(time2))
-            new_time2 = [time2[4], time2[6], time2[7], time2[8]]
-            # print(new_time2)
-            # print(str(new_time[3])[:14])
-            # print(str(new_time2[3])[:14])
-            departure.append(new_time2)
-            arrival.append(new_time)
-            d1 = datetime.strptime(str(new_time[3])[:14], "%H:%M:%S.%f")
-            d2 = datetime.strptime(str(new_time2[3])[:14], "%H:%M:%S.%f")
-            result = abs(d2 - d1)
-            # if(i == 0):
-            #    pairs.append(new_time)
-            # if(i == len(id_list) - 1):
-            #    pairs.append(new_time2)
-            # print((new_time2,new_time))
-            # print("RTT " + str(i) + ": " + str(result))
-            timestamps.append([str(new_time2[3])[:14], str(new_time[3])[:14], result.microseconds])
-            average += result.microseconds
+            time_frame_sent = pair[0]['_ws.col.Time']
+            time_frame_received = pair[1]['_ws.col.Time']
+            round_trip_time = abs(time_frame_received - time_frame_sent)
+            timestamp = (time_frame_sent, time_frame_received, round_trip_time)
+            timestamps.append(timestamp)
         except:
             packet_loss += 1
 
-    print("Packets dropped: " + str(packet_loss))
-    try:
-        average /= (len(id_list) - packet_loss)
-    except:
-        average = None
-    print("Average Time: " + str(average))
-    # print(departure[0])
-    # print(arrival[len(id_list) - 1 - packet_loss])
     return timestamps, packet_loss
