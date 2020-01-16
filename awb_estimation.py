@@ -4,6 +4,8 @@ import trend
 import sys
 import utility
 import matplotlib.pyplot as mp
+from subprocess import PIPE
+import subprocess
 import globals
 import numpy as np
 
@@ -39,6 +41,7 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
     current_ack_number = 1
     transmission_interval = calculate_transmission_interval(transmission_rate, train_length, packet_size)
     # Probe starts here
+    utility.print_verbose("tcpdump", verbose)
     for i in range(1):
         print("Currently running with these Parameters: ")
         utility.print_verbose("Transmission_interval: " + str(transmission_interval) + ":s", verbose)
@@ -47,6 +50,9 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
         #    transmission_interval = globals.MIN_TRANSMISSION_INTERVAL
         # TODO recalc
         packet_train_numbers = generate_packet_train(current_ack_number, train_length)
+        tcpdump_filter = generate_tcpdump_filter(packet_train_numbers)
+        p = subprocess.Popen(['tcpdump', 'tcp', tcpdump_filter, '-w', 'sender2.pcap'], stdout=subprocess.PIPE)
+        time.sleep(1)
         last_ack_number = packet_train_numbers[-1] + 40
         utility.print_verbose("Start transmission", verbose)
         packet_train_response, unanswered_list = scapy_util.send_receive_train(target, packet_train_numbers,
@@ -75,6 +81,16 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
     # Terminate and return
 
     return awb_min, awb_max
+
+
+def generate_tcpdump_filter(packet_train):
+    template = "(tcp[4:4] = {} and tcp[8:4] = 0) or (tcp[4:4] = 0 and tcp[8:4] = {})"
+    tcpdump_filter = ""
+    for i, packet in enumerate(packet_train):
+        if i > 0:
+            tcpdump_filter += " or "
+        tcpdump_filter += template.format(packet, packet)
+    return tcpdump_filter
 
 
 def generate_packet_train(starting_number, size):
