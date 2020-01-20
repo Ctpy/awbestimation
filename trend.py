@@ -41,16 +41,23 @@ def pdt_metric(timestamps, packet_loss, train_length):
     return -1
 
 
-def decreasing_trend_filter(timestamps):
-
+def decreasing_trend_filter(timestamps_tuple, unanswered_packet_list):
+    sent_time, timestamps = zip(*timestamps_tuple)
     # search for burst
+    sent_time = list(sent_time)
+    timestamps = list(timestamps)
+    print("TIME")
+    print(timestamps)
+    print(sent_time)
     mean = np.mean(timestamps)
     standard_derivation = np.std(timestamps)
     burst_packet_index_list = []
     print("Mean: " + str(mean))
     print("Standard Derivation: " + str(standard_derivation))
-    for i in range(len(timestamps)):
-        if mean + standard_derivation < timestamps[i]:
+    for i in range(1, len(timestamps) - globals.DT_CONSECUTIVE):
+        if timestamps[i - 1] is None or timestamps[i] is None:
+            continue
+        if timestamps[i - 1] + standard_derivation < timestamps[i]:
             burst_packet_index_list.append(i)
     print("Burst Index")
     print(burst_packet_index_list)
@@ -60,7 +67,7 @@ def decreasing_trend_filter(timestamps):
         decreasing_trend = True
         tmp = []
         last_packet_rtt = timestamps[burst_packet_index_list[i]]
-        for j in range(1, 1 + globals.DT_CONSECUTIVE):
+        for j in range(1,1 + globals.DT_CONSECUTIVE):
             if last_packet_rtt < timestamps[burst_packet_index_list[i] + j]:
                 decreasing_trend = False
                 break
@@ -68,14 +75,20 @@ def decreasing_trend_filter(timestamps):
         if decreasing_trend:
             decreasing_trend_index_list.extend(tmp)
     print(decreasing_trend_index_list)
-    burst_packet_index_list.append(decreasing_trend_index_list)
+    burst_packet_index_list.extend(decreasing_trend_index_list)
     print(type(burst_packet_index_list))
 
     list.sort(burst_packet_index_list)
-    timestamps_np = np.array(timestamps)
-    timestamps_np = np.delete(timestamps_np, decreasing_trend_index_list)
+    print(burst_packet_index_list)
+    for i in burst_packet_index_list:
+        print(str(i) + " : " + str(type(i)))
+        timestamps[i] = None
 
-    return timestamps_np.tolist()
+    timestamps = zip(tuple(sent_time), tuple(timestamps))
+    timestamps.extend(unanswered_packet_list)
+    timestamps.sort(key=lambda tup: tup[0])
+    print(timestamps)
+    return timestamps, set(burst_packet_index_list)
 
 
 def robust_regression_filter(timestamps, packet_loss, train_length):

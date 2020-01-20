@@ -39,7 +39,7 @@ class CrossTrafficTopo(Topo):
         for i in range(0, size):
             sw = self.addSwitch('sw' + str(i))
             # Left link
-            self.addLink(sw, lastNode, delay='50ms')
+            self.addLink(sw, lastNode, delay='50ms', bw=1)
             # Bottom Link
             self.addLink(bottomHost, sw, delay='50ms')
             # Upper Link
@@ -47,7 +47,7 @@ class CrossTrafficTopo(Topo):
             lastNode = sw
 
         # Connect last node with main receiver
-        self.addLink(lastNode, rightHost, delay='50ms')
+        self.addLink(lastNode, rightHost, delay='50ms', bw=1)
 
 
 def build_topo(switch_count, duration, capacities, cross_traffic, verbose=False):
@@ -142,7 +142,7 @@ def build_topo(switch_count, duration, capacities, cross_traffic, verbose=False)
         if verbose:
             print('Running main file transfer...')
         # leftHost.cmd('iperf -t {} -c {} &'.format(duration, rightHost.IP()))
-        print(leftHost.cmd('sudo python awb_estimation.py {} {} {}'.format(rightHost.IP(), 10, 10)))
+        print(leftHost.cmd('sudo python awb_estimation.py {} {} {}'.format(rightHost.IP(), 1, 10)))
         time.sleep(duration + 1)
     except (KeyboardInterrupt, Exception) as e:
         if isinstance(e, KeyboardInterrupt):

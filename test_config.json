@@ -1,6 +1,6 @@
 {
   "capacity_range": [
-    10,
+    1,
     30
   ],
   "capacity_delta": 5,

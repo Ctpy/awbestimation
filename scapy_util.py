@@ -10,7 +10,7 @@ except ImportError:
 
 
 def generate_packet(ip, ack_number, payload):
-    tcp_ack = IP(dst=ip, id=ack_number) / TCP(ack=ack_number, flags='A') / Raw(load=payload)
+    tcp_ack = Ether()/IP(dst=ip, id=ack_number) / TCP(ack=ack_number, flags='A') / Raw(load=payload)
     return tcp_ack
 
 
@@ -27,9 +27,9 @@ def send_train(ip, packet_train, transmission_interval, verbose):
     send(generate_packet_train(ip, packet_train, 'x' * 1452), inter=transmission_interval, verbose=verbose)
 
 
-def send_receive_train(ip, packet_train_numbers, transmission_interval, timeout=1, verbose=False):
+def send_receive_train(ip, packet_train_numbers, transmission_interval, timeout=10, verbose=False):
     packet_train = generate_packet_train(ip, packet_train_numbers, 'x'*1452)
-    ans, unans = sr(packet_train, inter=transmission_interval, timeout=timeout)
+    ans, unans = srp(packet_train, inter=transmission_interval, timeout=timeout)
     print(ans.show())
     print("packet_loss_rate: " + str(len(unans)/len(packet_train_numbers)))
     return ans, unans

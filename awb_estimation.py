@@ -2,6 +2,7 @@ import time
 import scapy_util
 import trend
 import sys
+import math
 import pcap_util
 import utility
 import matplotlib.pyplot as mp
@@ -27,7 +28,7 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
     utility.print_verbose("Start available bandwidth estimation", verbose)
     # Config Data here
     utility.print_verbose("Initializing parameters", verbose)
-    current_awb = capacity * 0.75  # start at 75% of capacity
+    current_awb = capacity * 1.5  # start at 75% of capacity
     awb_min = (1 - resolution) * current_awb  # Check if smaller 0
     awb_max = (1 - resolution) * current_awb  # Check if greater 100
     pct_trend_list = []
@@ -35,12 +36,14 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
     trend_list = []
     # In Mbits
     transmission_rate = capacity * 0.75
+    print("Transmission_rate: " + str(transmission_rate))
     # In Byte
-    packet_size = 1500
+    packet_size = 1500 * 8
     # Numbers of packets per train
-    train_length = 100
+    train_length = calculate_train_length(transmission_rate, packet_size)
+    utility.print_verbose("Train_length :" + str(train_length), verbose)
     current_ack_number = 1
-    transmission_interval = calculate_transmission_interval(transmission_rate, train_length, packet_size)
+    transmission_interval = calculate_transmission_interval(train_length)
     # Probe starts here
     utility.print_verbose("tcpdump", verbose)
     for i in range(1):
@@ -55,44 +58,54 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
         print(tcpdump_filter)
         template = '-i leftHost-eth0 -tt -U  -w sender2.pcap'
         template = template.split(' ')
-        print(template)
+        # print(template)
         f = ['tcpdump']
         f.extend(template)
         f.extend([tcpdump_filter])
         p = subprocess.Popen(f, stdout=subprocess.PIPE)
-        print(p)
+        # print(p)
         time.sleep(1)
         last_ack_number = packet_train_numbers[-1] + 40
         utility.print_verbose("Start transmission", verbose)
-        packet_train_response, unanswered_list = scapy_util.send_receive_train(target, packet_train_numbers,
-                                                                               transmission_interval, verbose)
+        packet_train_response, unanswered = scapy_util.send_receive_train(target, packet_train_numbers, transmission_interval, verbose)
         utility.print_verbose("Transmission finished", verbose)
         # sort train by seq number
+        first = min(packet_train_response[0][0].sent_time, unanswered[0].sent_time)
+        unanswered_list = []
+        for i in unanswered:
+            print(i.sent_time - first)
+            unanswered_list.append((i.sent_time - first, None))
         utility.print_verbose("Calculating RTT", verbose)
         packet_train_response.sort(key=lambda packet: packet[1].seq)
         round_trip_times = scapy_util.calculate_round_trip_time(packet_train_response)
         utility.print_verbose("Packet_loss_rate: " + str(len(unanswered_list) / train_length), verbose)
         time.sleep(1)
         pcap_util.convert_to_csv('sender2.pcap', 'sender2.csv', packet_train_numbers)
-        timestamps_tcpdump, packet_l = pcap_util.analyze_csv('sender2.csv', packet_train_numbers)
+        timestamps_tcpdump, unanswered_list_tcpdump,  packet_l = pcap_util.analyze_csv('sender2.csv', packet_train_numbers)
         # Plot round trip times
+        print("#########################" + str(packet_l))
         # plot_results(packet_train_response, round_trip_times, 'rtt{}.png'.format(i), True)
-        #mp.plot(*zip(*np.array([(sent_time, rtt_tcpdump) for sent_time,r,rtt_tcpdump in timestamps_tcpdump].sort(key=lambda x:x[0]))))
+        # mp.plot(*zip(*np.array([(sent_time, rtt_tcpdump) for sent_time,r,rtt_tcpdump in timestamps_tcpdump].sort(key=lambda x:x[0]))))
         round_trip_times.sort(key=lambda x:x[0])
         mp.plot(*zip(*timestamps_tcpdump), linestyle= '--', color='red', label="tcpdump")
         mp.plot(*zip(*round_trip_times), linestyle=':', color='blue', label="scapy")
         mp.ylabel("Round trip time in second")
         mp.xlabel("Time in seconds")
         mp.legend(loc='upper right')
+        # calculate trend
+        mp.legend(loc='upper right')
         mp.savefig('rtt.svg', format='svg')
         mp.show()
-        # calculate trend
-
-        # filtered_timestamps = trend.decreasing_trend_filter(round_trip_times)
-        # utility.print_verbose("Filtered Timestamps", verbose)
-        # utility.print_verbose(filtered_timestamps, verbose)
-        # utility.print_verbose("Filtered out: {}".format(len(round_trip_times) - len(filtered_timestamps)), verbose)
-        #plot_results(filtered_timestamps, filtered_timestamps, 'rtt_filtered{}.png'.format(i), True)
+        filtered_timestamps_scapy, filtered = trend.decreasing_trend_filter(round_trip_times, unanswered_list)
+        mp.plot(*zip(*filtered_timestamps_scapy), linestyle='-', color='green', label="filtered scapy")
+        filtered_timestamps_tcpdump, filtered = trend.decreasing_trend_filter(timestamps_tcpdump, unanswered_list_tcpdump)
+        mp.plot(*zip(*filtered_timestamps_tcpdump), linestyle='-.', color='purple', label="filtered tcpdump")
+        mp.legend(loc='upper right')
+        mp.tick_params(axis='x', which='major')
+        mp.savefig('rtt_filtered.svg', format='svg')
+        mp.show()
+        utility.print_verbose("Filtered out: {}".format(len(filtered)), verbose)
+        utility.print_verbose(filtered, verbose)
 
         current_ack_number = last_ack_number
         # # wait that fleets dont interfere
@@ -142,12 +155,12 @@ def calculate_parameters(trend, train_length, transmission_interval, min_awb, ma
     return
 
 
-def calculate_train_length(transmission_rate, transmission_interval, packet_size):
-    return (transmission_interval * transmission_rate) / packet_size
+def calculate_train_length(transmission_rate, packet_size):
+    return int(math.ceil(transmission_rate/packet_size))
 
 
-def calculate_transmission_interval(transmission_rate, train_length, packet_size):
-    return (train_length * packet_size) / transmission_rate
+def calculate_transmission_interval(train_length):
+    return 1.0/float(train_length)
 
 
 def plot_results(packet_train_response, round_trip_times, filename='rtt.png', clear=False):

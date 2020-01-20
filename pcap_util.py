@@ -25,6 +25,7 @@ def analyze_csv(input_file, id_list):
     print("Analyse csv file...")
     data = pd.read_csv(input_file)
     timestamps = []
+    unanswered = []
     packet_loss = 0
     for i in id_list:
         try:
@@ -40,6 +41,10 @@ def analyze_csv(input_file, id_list):
             timestamps.append(timestamp)
             #print(round_trip_time)
         except:
+            frame = data[data['tcp.ack'] == i]
+            time_frame_sent = frame['_ws.col.Time'].item()
+            timestamp = (time_frame_sent, None)
+            unanswered.append(timestamp)
             packet_loss += 1
 
-    return timestamps, packet_loss
+    return timestamps, unanswered, packet_loss
