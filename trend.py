@@ -54,6 +54,7 @@ def decreasing_trend_filter(timestamps_tuple, unanswered_packet_list):
     burst_packet_index_list = []
     print("Mean: " + str(mean))
     print("Standard Derivation: " + str(standard_derivation))
+    burst_packet_index_list
     for i in range(1, len(timestamps) - globals.DT_CONSECUTIVE):
         if timestamps[i - 1] is None or timestamps[i] is None:
             continue
@@ -67,7 +68,7 @@ def decreasing_trend_filter(timestamps_tuple, unanswered_packet_list):
         decreasing_trend = True
         tmp = []
         last_packet_rtt = timestamps[burst_packet_index_list[i]]
-        for j in range(1,1 + globals.DT_CONSECUTIVE):
+        for j in range(1, 1 + globals.DT_CONSECUTIVE):
             if last_packet_rtt < timestamps[burst_packet_index_list[i] + j]:
                 decreasing_trend = False
                 break
