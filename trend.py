@@ -2,7 +2,7 @@ import numpy as np
 import math
 import globals
 import matplotlib.pyplot as mp
-
+import utility
 
 def calculate_trend(timestamps, packet_loss, train_length):
     np.set_printoptions(suppress=True)
@@ -41,27 +41,21 @@ def pdt_metric(timestamps, packet_loss, train_length):
     return -1
 
 
-def decreasing_trend_filter(timestamps_tuple, unanswered_packet_list):
+def decreasing_trend_filter(timestamps_tuple):
     sent_time, timestamps = zip(*timestamps_tuple)
     # search for burst
     sent_time = list(sent_time)
     timestamps = list(timestamps)
-    print("TIME")
-    print(timestamps)
-    print(sent_time)
     mean = np.mean(timestamps)
     standard_derivation = np.std(timestamps)
     burst_packet_index_list = []
-    print("Mean: " + str(mean))
-    print("Standard Derivation: " + str(standard_derivation))
-    burst_packet_index_list
+    utility.print_verbose("Mean: " + str(mean))
+    utility.print_verbose("Standard Derivation: " + str(standard_derivation))
     for i in range(1, len(timestamps) - globals.DT_CONSECUTIVE):
         if timestamps[i - 1] is None or timestamps[i] is None:
             continue
         if timestamps[i - 1] + standard_derivation < timestamps[i]:
             burst_packet_index_list.append(i)
-    print("Burst Index")
-    print(burst_packet_index_list)
     # search for consecutive packet sample with decreasing rtt
     decreasing_trend_index_list = []
     for i in range(len(burst_packet_index_list)):
@@ -75,21 +69,15 @@ def decreasing_trend_filter(timestamps_tuple, unanswered_packet_list):
             tmp.append(burst_packet_index_list[i] + j)
         if decreasing_trend:
             decreasing_trend_index_list.extend(tmp)
-    print(decreasing_trend_index_list)
     burst_packet_index_list.extend(decreasing_trend_index_list)
-    print(type(burst_packet_index_list))
 
     list.sort(burst_packet_index_list)
-    print(burst_packet_index_list)
-    for i in burst_packet_index_list:
-        print(str(i) + " : " + str(type(i)))
-        timestamps[i] = None
-
+    new_index_list = list(set(burst_packet_index_list))
+    timestamps = np.array(timestamps)
+    timestamps = np.delete(timestamps, new_index_list)
     timestamps = zip(tuple(sent_time), tuple(timestamps))
-    timestamps.extend(unanswered_packet_list)
     timestamps.sort(key=lambda tup: tup[0])
-    print(timestamps)
-    return timestamps, set(burst_packet_index_list)
+    return timestamps, new_index_list
 
 
 def robust_regression_filter(timestamps, packet_loss, train_length):

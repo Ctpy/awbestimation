@@ -1,4 +1,3 @@
-from datetime import datetime
 import subprocess
 import pandas as pd
 
@@ -10,7 +9,6 @@ def convert_to_csv(filename, outputfile, packet_train):
         if i > 0:
             filter_string += " or "
         filter_string += template.format(packet, packet)
-    print(filter)
     print("Converting pcap to csv format...")
     cmd = """tshark -r {} -T fields -e frame.number -e _ws.col.Time -e eth.src -e eth.dst -e ip.src -e ip.dst -e ip.proto -e tcp.ack -e tcp.flags -e tcp.seq -o tcp.relative_sequence_numbers:FALSE -E header=y -E separator=, -E quote=d -E occurrence=f -Y "{}" > {}""".format(
         filename, filter_string, outputfile)
@@ -31,15 +29,10 @@ def analyze_csv(input_file, id_list):
         try:
             pair = (data[data['tcp.ack'] == i], data[data['tcp.seq'] == i])
             time_frame_sent = pair[0]['_ws.col.Time'].item()
-            # print(time_frame_sent)
             time_frame_received = pair[1]['_ws.col.Time'].item()
-            # print(time_frame_received)
-            # print(str(i) + ": "+ str(time_frame_received - time_frame_sent))
             round_trip_time = abs(time_frame_received - time_frame_sent)
-            print(str(i) + ": (" + str(time_frame_sent) + "," + str(round_trip_time) + ")")
             timestamp = (time_frame_sent, round_trip_time)
             timestamps.append(timestamp)
-            #print(round_trip_time)
         except:
             frame = data[data['tcp.ack'] == i]
             time_frame_sent = frame['_ws.col.Time'].item()

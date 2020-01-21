@@ -15,8 +15,6 @@ def generate_packet(ip, ack_number, payload):
 
 
 def generate_packet_train(ip, ack_numbers, payload):
-    print("In generate_packet_train")
-    print(ack_numbers)
     train = []
     for ack_number in ack_numbers:
         train.append(generate_packet(ip, ack_number, payload))
@@ -30,8 +28,6 @@ def send_train(ip, packet_train, transmission_interval, verbose):
 def send_receive_train(ip, packet_train_numbers, transmission_interval, timeout=10, verbose=False):
     packet_train = generate_packet_train(ip, packet_train_numbers, 'x'*1452)
     ans, unans = srp(packet_train, inter=transmission_interval, timeout=timeout)
-    print(ans.show())
-    print("packet_loss_rate: " + str(len(unans)/len(packet_train_numbers)))
     return ans, unans
 
 
@@ -40,7 +36,6 @@ def calculate_round_trip_time(packet_train):
     first_time = packet_train[0][0].sent_time
     for pkt in packet_train:
         round_trip_times.append((pkt[0].sent_time - first_time,pkt[1].time - pkt[0].sent_time))
-    print(round_trip_times)
     return round_trip_times
 
 
