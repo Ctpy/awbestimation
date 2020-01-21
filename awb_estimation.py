@@ -35,7 +35,7 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
     pdt_trend_list = []
     trend_list = []
     # In Mbits
-    transmission_rate = capacity * 0.75
+    transmission_rate = capacity * 0.1375
     print("Transmission_rate: " + str(transmission_rate))
     # In Byte
     packet_size = 1500 * 8
@@ -70,15 +70,16 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
         packet_train_response, unanswered = scapy_util.send_receive_train(target, packet_train_numbers, transmission_interval, verbose)
         utility.print_verbose("Transmission finished", verbose)
         # sort train by seq number
-        first = min(packet_train_response[0][0].sent_time, unanswered[0].sent_time)
         unanswered_list = []
-        for i in unanswered:
-            print(i.sent_time - first)
-            unanswered_list.append((i.sent_time - first, None))
+        if len(unanswered) != 0:
+            first = min(packet_train_response[0][0].sent_time, unanswered[0].sent_time)
+            for i in unanswered:
+                print(i.sent_time - first)
+                unanswered_list.append((i.sent_time - first, None))
         utility.print_verbose("Calculating RTT", verbose)
         packet_train_response.sort(key=lambda packet: packet[1].seq)
         round_trip_times = scapy_util.calculate_round_trip_time(packet_train_response)
-        utility.print_verbose("Packet_loss_rate: " + str(len(unanswered_list) / train_length), verbose)
+        # utility.print_verbose("Packet_loss_rate: " + str(len(unanswered_list) / train_length), verbose)
         time.sleep(1)
         pcap_util.convert_to_csv('sender2.pcap', 'sender2.csv', packet_train_numbers)
         timestamps_tcpdump, unanswered_list_tcpdump,  packet_l = pcap_util.analyze_csv('sender2.csv', packet_train_numbers)
@@ -100,13 +101,17 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
         mp.plot(*zip(*filtered_timestamps_scapy), linestyle='-', color='green', label="filtered scapy")
         filtered_timestamps_tcpdump, filtered = trend.decreasing_trend_filter(timestamps_tcpdump, unanswered_list_tcpdump)
         mp.plot(*zip(*filtered_timestamps_tcpdump), linestyle='-.', color='purple', label="filtered tcpdump")
+        sent_time, rtt = zip(*filtered_timestamps_tcpdump)
+        A = np.vstack([np.array(list(sent_time)), np.ones(len(sent_time))]).T
+        m, c = np.linalg.lstsq(A, np.array(list(rtt)), rcond=None)[0]
+        mp.plot(np.array(list(sent_time)),np.array(list(sent_time)) * m + c, 'r', label="Fitted Line")
         mp.legend(loc='upper right')
         mp.tick_params(axis='x', which='major')
         mp.savefig('rtt_filtered.svg', format='svg')
         mp.show()
         utility.print_verbose("Filtered out: {}".format(len(filtered)), verbose)
         utility.print_verbose(filtered, verbose)
-
+        print("Slope: " + str(c))
         current_ack_number = last_ack_number
         # # wait that fleets dont interfere
         time.sleep(1)
