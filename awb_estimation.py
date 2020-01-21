@@ -48,7 +48,10 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
     # Probe starts here
     utility.print_verbose("tcpdump", verbose)
     no_trend_counter = 0
-    for i in range(1):
+    for i in range(12):
+        if i > 0:
+            train_length = calculate_train_length(transmission_rate, packet_size)
+            transmission_interval = calculate_transmission_interval(train_length)
         print("Currently running with these Parameters: ")
         utility.print_verbose("Transmission_interval: " + str(transmission_interval) + ":s", verbose)
         utility.print_verbose("Generating packet_train", verbose)
@@ -98,7 +101,7 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
         mp.xlabel("Time in seconds")
         mp.legend(loc='upper right')
         # calculate trend
-        mp.legend(loc='upper right')
+        mp.title("Rate {} Mbit/s ".format(transmission_rate))
         mp.savefig('rtt{}.svg'.format(i), format='svg')
         mp.show()
         filtered_timestamps_scapy, filtered = trend.decreasing_trend_filter(round_trip_times, unanswered_list)
@@ -116,7 +119,7 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
         mp.tick_params(axis='x', which='major')
         mp.savefig('rtt_filtered{}.svg'.format(i), format='svg')
         mp.show()
-
+        mp.clf()
         utility.print_verbose("Filtered out: {}".format(len(filtered)), verbose)
         utility.print_verbose(filtered, verbose)
         print("Slope: " + str(c))
@@ -126,6 +129,7 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
             percentage = percentage - percentage/2.0
             transmission_rate = capacity * percentage
             awb_max = transmission_rate
+            no_trend_counter = 0
         elif c < 0.3 and no_trend_counter < 2:
             no_trend_counter += 1
             percentage = percentage + percentage/2.0
