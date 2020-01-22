@@ -41,16 +41,16 @@ def pdt_metric(timestamps, packet_loss, train_length):
     return -1
 
 
-def decreasing_trend_filter(timestamps_tuple):
+def decreasing_trend_filter(timestamps_tuple, verbose):
     sent_time, timestamps = zip(*timestamps_tuple)
     # search for burst
     sent_time = list(sent_time)
     timestamps = list(timestamps)
     mean = np.mean(timestamps)
     standard_derivation = np.std(timestamps)
-    burst_packet_index_list = []
-    utility.print_verbose("Mean: " + str(mean))
-    utility.print_verbose("Standard Derivation: " + str(standard_derivation))
+    burst_packet_index_list = [0]
+    utility.print_verbose("Mean: " + str(mean), verbose)
+    utility.print_verbose("Standard Derivation: " + str(standard_derivation), verbose)
     for i in range(1, len(timestamps) - globals.DT_CONSECUTIVE):
         if timestamps[i - 1] is None or timestamps[i] is None:
             continue
@@ -75,6 +75,8 @@ def decreasing_trend_filter(timestamps_tuple):
     new_index_list = list(set(burst_packet_index_list))
     timestamps = np.array(timestamps)
     timestamps = np.delete(timestamps, new_index_list)
+    sent_time = np.array(sent_time)
+    sent_time = np.delete(sent_time, new_index_list)
     timestamps = zip(tuple(sent_time), tuple(timestamps))
     timestamps.sort(key=lambda tup: tup[0])
     return timestamps, new_index_list

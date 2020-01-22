@@ -24,18 +24,19 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
     :param resolution -- Accuracy of the estimation
     :param verbose -- more output
     """
-    capacity *= 1000000 * 8
+    capacity *= 1000000
+    utility.print_verbose("Capacity is :" + str(capacity) + "bit", verbose)
     utility.print_verbose("Start available bandwidth estimation", verbose)
     # Config Data here
     utility.print_verbose("Initializing parameters", verbose)
-    current_awb = capacity * 1.5  # start at 75% of capacity
+    current_awb = capacity   # start at 75% of capacity
     awb_min = (1 - resolution) * current_awb  # Check if smaller 0
     awb_max = (1 - resolution) * current_awb  # Check if greater 100
     pct_trend_list = []
     pdt_trend_list = []
     trend_list = []
     # In Mbits
-    percentage = 0.15
+    percentage = 0.5
     transmission_rate = capacity * percentage
     print("Transmission_rate: " + str(transmission_rate))
     # In Byte
@@ -48,8 +49,24 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
     # Probe starts here
     utility.print_verbose("tcpdump", verbose)
     no_trend_counter = 0
+    step = transmission_rate / 2.0
+    m = 0
+    c = 0
     for i in range(12):
+        print("------------Iteration {}-----------".format(i))
         if i > 0:
+            if m > 0.00005:
+                transmission_rate = transmission_rate - step
+                step /= 2.0
+                awb_max = transmission_rate
+                no_trend_counter = 0
+            elif m < 0.00005 and no_trend_counter < 2:
+                no_trend_counter += 1
+                transmission_rate = transmission_rate + step
+                step /= 2.0
+                awb_min = transmission_rate
+            else:
+                break
             train_length = calculate_train_length(transmission_rate, packet_size)
             transmission_interval = calculate_transmission_interval(train_length)
         print("Currently running with these Parameters: ")
@@ -60,15 +77,12 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
         # TODO recalc
         packet_train_numbers = generate_packet_train(current_ack_number, train_length)
         tcpdump_filter = generate_tcpdump_filter(packet_train_numbers)
-        print(tcpdump_filter)
         template = '-i leftHost-eth0 -tt -U  -w sender2.pcap'
         template = template.split(' ')
-        # print(template)
         f = ['tcpdump']
         f.extend(template)
         f.extend([tcpdump_filter])
         p = subprocess.Popen(f, stdout=subprocess.PIPE)
-        # print(p)
         time.sleep(1)
 
         last_ack_number = packet_train_numbers[-1] + 40
@@ -79,11 +93,10 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
         utility.print_verbose("Calculating RTT", verbose)
         packet_train_response.sort(key=lambda packet: packet[1].seq)
         round_trip_times = scapy_util.calculate_round_trip_time(packet_train_response)
-        # utility.print_verbose("Packet_loss_rate: " + str(len(unanswered_list) / train_length), verbose)
         time.sleep(1)
         pcap_util.convert_to_csv('sender2.pcap', 'sender2.csv', packet_train_numbers)
-        timestamps_tcpdump, unanswered_list_tcpdump,  packet_l = pcap_util.analyze_csv('sender2.csv', packet_train_numbers)
-
+        timestamps_tcpdump, unanswered_list_tcpdump, packet_l = pcap_util.analyze_csv('sender2.csv', packet_train_numbers)
+        print(timestamps_tcpdump)
         # Plot round trip times
         # plot_results(packet_train_response, round_trip_times, 'rtt{}.png'.format(i), True)
         # mp.plot(*zip(*np.array([(sent_time, rtt_tcpdump) for sent_time,r,rtt_tcpdump in timestamps_tcpdump].sort(key=lambda x:x[0]))))
@@ -97,14 +110,17 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
         mp.title("Rate {} bit/s ".format(transmission_rate))
         mp.savefig('rtt{}.svg'.format(i), format='svg')
         mp.show()
-        filtered_timestamps_scapy, filtered = trend.decreasing_trend_filter(round_trip_times, unanswered_list)
-        mp.plot(*zip(*filtered_timestamps_scapy), linestyle='-', color='green', label="filtered scapy")
-        filtered_timestamps_tcpdump, filtered = trend.decreasing_trend_filter(timestamps_tcpdump, unanswered_list_tcpdump)
+        mp.clf()
+        mp.plot(*zip(*timestamps_tcpdump), linestyle= '--', color='red', label="tcpdump")
+        filtered_timestamps_scapy, filtered = trend.decreasing_trend_filter(round_trip_times, verbose)
+        # mp.plot(*zip(*filtered_timestamps_scapy), linestyle='-', color='green', label="filtered scapy")
+        filtered_timestamps_tcpdump, filtered = trend.decreasing_trend_filter(timestamps_tcpdump, verbose)
+        print(filtered_timestamps_tcpdump)
         mp.plot(*zip(*filtered_timestamps_tcpdump), linestyle='-.', color='purple', label="filtered tcpdump")
         sent_time, rtt = zip(*filtered_timestamps_tcpdump)
         A = np.vstack([np.array(list(sent_time)), np.ones(len(sent_time))]).T
         m, c = np.linalg.lstsq(A, np.array(list(rtt)), rcond=None)[0]
-        mp.plot(np.array(list(sent_time)),np.array(list(sent_time)) * m + c, 'r', label="Fitted Line")
+        mp.plot(np.array(list(sent_time)),np.array(list(sent_time)) * m + c, 'blue', label="Fitted Line")
         mp.legend(loc='upper right')
         mp.tick_params(axis='x', which='major')
         mp.savefig('rtt_filtered{}.svg'.format(i), format='svg')
@@ -112,26 +128,13 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
         mp.clf()
         utility.print_verbose("Filtered out: {}".format(len(filtered)), verbose)
         utility.print_verbose(filtered, verbose)
-        print("Slope: " + str(c))
+        print("Slope: " + str(m))
         current_ack_number = last_ack_number
 
         # # wait that fleets dont interfere
-        if c > 0.3:
-            percentage = percentage - percentage/2.0
-            transmission_rate = capacity * percentage
-            awb_max = transmission_rate
-            no_trend_counter = 0
-        elif c < 0.3 and no_trend_counter < 2:
-            no_trend_counter += 1
-            percentage = percentage + percentage/2.0
-            transmission_rate = capacity * percentage
-            awb_min = transmission_rate
-        else:
-            print ("[" + str(awb_min) + "," + str(awb_max) + "]")
-            break
         time.sleep(1)
     # Terminate and return
-
+    print ("[" + str(awb_min) + "," + str(awb_max) + "]")
     return awb_min, awb_max
 
 
