@@ -30,8 +30,8 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
     # Config Data here
     utility.print_verbose("Initializing parameters", verbose)
     current_awb = capacity   # start at 75% of capacity
-    awb_min = (1 - resolution) * current_awb  # Check if smaller 0
-    awb_max = (1 - resolution) * current_awb  # Check if greater 100
+    awb_min = 0  # Check if smaller 0
+    awb_max = capacity  # Check if greater 100
     pct_trend_list = []
     pdt_trend_list = []
     trend_list = []
@@ -55,12 +55,12 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
     for i in range(12):
         print("------------Iteration {}-----------".format(i))
         if i > 0:
-            if m > 0.00005:
+            if m > 0.00001:
                 transmission_rate = transmission_rate - step
                 step /= 2.0
                 awb_max = transmission_rate
                 no_trend_counter = 0
-            elif m < 0.00005 and no_trend_counter < 2:
+            elif m < 0.00001 and no_trend_counter < 2:
                 no_trend_counter += 1
                 transmission_rate = transmission_rate + step
                 step /= 2.0
@@ -120,17 +120,19 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
         sent_time, rtt = zip(*filtered_timestamps_tcpdump)
         A = np.vstack([np.array(list(sent_time)), np.ones(len(sent_time))]).T
         m, c = np.linalg.lstsq(A, np.array(list(rtt)), rcond=None)[0]
-        mp.plot(np.array(list(sent_time)),np.array(list(sent_time)) * m + c, 'blue', label="Fitted Line")
-        mp.legend(loc='upper right')
-        mp.tick_params(axis='x', which='major')
-        mp.savefig('rtt_filtered{}.svg'.format(i), format='svg')
-        mp.show()
-        mp.clf()
+        mp.plot(np.array(list(sent_time)),np.array(list(sent_time)) * m + c, 'blue', label="OLS")
         utility.print_verbose("Filtered out: {}".format(len(filtered)), verbose)
         utility.print_verbose(filtered, verbose)
         print("Slope: " + str(m))
         current_ack_number = last_ack_number
-
+        c, m = trend.robust_regression_filter(filtered_timestamps_tcpdump, m, c)
+        mp.plot(np.array(list(sent_time)), np.array(list(sent_time)) * m + c, 'green', label="IRLS")
+        mp.legend(loc='upper right')
+        mp.tick_params(axis='x', which='major')
+        mp.title("{} bit/s".format(transmission_rate))
+        mp.savefig('rtt_filtered{}.svg'.format(i), format='svg')
+        mp.show()
+        mp.clf()
         # # wait that fleets dont interfere
         time.sleep(1)
     # Terminate and return

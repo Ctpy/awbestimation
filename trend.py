@@ -3,6 +3,7 @@ import math
 import globals
 import matplotlib.pyplot as mp
 import utility
+import statsmodels.api as sm
 
 def calculate_trend(timestamps, packet_loss, train_length):
     np.set_printoptions(suppress=True)
@@ -82,15 +83,36 @@ def decreasing_trend_filter(timestamps_tuple, verbose):
     return timestamps, new_index_list
 
 
-def robust_regression_filter(timestamps, packet_loss, train_length):
+def robust_regression_filter(timestamps, slope, constant):
     iter_limit = 10
     columns = 2
-    # TODO
-    # OLS
-
-    # return trend
-
-    return
+    m = slope
+    c = constant
+    for i in range(iter_limit):
+        weight_vector = []
+        for times in timestamps:
+            error = math.fabs((m * times[0] + c) - times[1])
+            weight_vector.append(1./error**2)
+        x_vector, Y = zip(*timestamps)
+        X  = sm.add_constant(x_vector)
+        wls_model = sm.WLS(Y, X, weights = weight_vector)
+        results = wls_model.fit()
+        print("Slope: " + str(results.params))
+        new_c = results.params[0]
+        new_m = results.params[1]
+        if i > 0:
+            converge = False
+            for i in range(len(weight_vector)):
+                if math.fabs(new_c -c) < 0.0001 and math.fabs(new_m - m) < 0.0001:
+                    converge = True
+                else:
+                    converge = False
+                    break
+            if converge:
+                break
+        c = results.params[0]
+        m = results.params[1]
+    return c, m
 
 
 if __name__ == '__main__':
