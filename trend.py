@@ -5,7 +5,7 @@ import matplotlib.pyplot as mp
 import utility
 
 import statsmodels.api as sm
-
+mp.switch_backend('agg')
 
 def calculate_trend(timestamps, packet_loss, train_length):
     np.set_printoptions(suppress=True)
@@ -181,13 +181,12 @@ if __name__ == '__main__':
     print(len(y))
     timestamps = zip(x, y)
     print(timestamps)
-    filtered = decreasing_trend_filter(timestamps, True)
+    new_timestamps, filtered = decreasing_trend_filter(timestamps, True)
     # Plot here
-    mp.plot(*zip(*timestamps), 'green', label="unfiltered", marker='x')
-    mp.plot(*zip(*filtered), 'blue', label="filtered", marker='d')
-    mp.legend(loc='upper right')
+    mp.figure(figsize=(12,6))
+    mp.plot(x, y, 'green', label="unfiltered", marker='x')
+    mp.plot(*zip(*new_timestamps), color='blue', label="filtered", marker='x')
     mp.tick_params(axis='x', which='major')
-    mp.title("{} bit/s".format(transmission_rate))
-    mp.savefig('rtt_filtered{}.svg'.format(i), format='svg')
+    mp.savefig('test_dt.svg', format='svg')
     mp.show()
     mp.clf()

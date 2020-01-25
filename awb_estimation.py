@@ -111,12 +111,12 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
         mp.savefig('rtt{}.svg'.format(i), format='svg')
         mp.show()
         mp.clf()
-        mp.plot(*zip(*timestamps_tcpdump), linestyle= '--', color='red', label="tcpdump")
+        mp.plot(*zip(*timestamps_tcpdump), linestyle= '--', color='red', label="tcpdump", marker='s')
         filtered_timestamps_scapy, filtered = trend.decreasing_trend_filter(round_trip_times, verbose)
         # mp.plot(*zip(*filtered_timestamps_scapy), linestyle='-', color='green', label="filtered scapy")
         filtered_timestamps_tcpdump, filtered = trend.decreasing_trend_filter(timestamps_tcpdump, verbose)
         print(filtered_timestamps_tcpdump)
-        mp.plot(*zip(*filtered_timestamps_tcpdump), linestyle='-.', color='purple', label="filtered tcpdump")
+        mp.plot(*zip(*filtered_timestamps_tcpdump), linestyle='-.', color='purple', label="filtered tcpdump", marker="x")
         sent_time, rtt = zip(*filtered_timestamps_tcpdump)
         A = np.vstack([np.array(list(sent_time)), np.ones(len(sent_time))]).T
         m, c = np.linalg.lstsq(A, np.array(list(rtt)), rcond=None)[0]
@@ -126,7 +126,7 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
         print("Slope: " + str(m))
         current_ack_number = last_ack_number
         c, m = trend.robust_regression_filter(filtered_timestamps_tcpdump, m, c)
-        mp.plot(np.array(list(sent_time)), np.array(list(sent_time)) * m + c, 'green', label="IRLS")
+        mp.plot(np.array(list(sent_time)), np.array(list(sent_time)) * m + c, 'green', label="IRLS", marker='o')
         mp.legend(loc='upper right')
         mp.tick_params(axis='x', which='major')
         mp.title("{} bit/s".format(transmission_rate))
