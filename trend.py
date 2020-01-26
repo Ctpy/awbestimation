@@ -4,7 +4,7 @@ import globals
 import matplotlib.pyplot as mp
 import utility
 
-import statsmodels.api as sm
+#import statsmodels.api as sm
 mp.switch_backend('agg')
 
 def calculate_trend(timestamps, packet_loss, train_length):
@@ -56,20 +56,20 @@ def decreasing_trend_filter(timestamps_tuple, verbose):
     utility.print_verbose("Standard Derivation: " + str(standard_derivation), verbose)
     # search for consecutive packet sample with decreasing rtt
     decreasing_trend_index_list = []
-    for i in range(1, len(timestamps)):
+    for i in range(len(timestamps)):
         consecutive = 0
         tmp = []
-        last_packet_index = timestamps[i]
+        last_packet_index = i
         for j in range(i + 1, len(timestamps)):
-            if timestamps[last_packet_index] < timestamps[j]:
+            if timestamps[last_packet_index] > timestamps[j]:
                 consecutive += 1
                 tmp.append(last_packet_index)
-                last_packet_index = timestamps[j]
+                last_packet_index = j
             else:
                 break
         if consecutive >= globals.DT_CONSECUTIVE:
             decreasing_trend_index_list.extend(tmp)
-        i = last_packet_index
+            i = last_packet_index
 
     list.sort(burst_packet_index_list)
     new_index_list = list(set(burst_packet_index_list))
