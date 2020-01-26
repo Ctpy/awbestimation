@@ -66,20 +66,19 @@ def decreasing_trend_filter(timestamps_tuple, verbose):
                 tmp.append(last_packet_index)
                 last_packet_index = j
             else:
+                tmp.append(last_packet_index)
                 break
-        if consecutive >= globals.DT_CONSECUTIVE:
+        if len(tmp) >= globals.DT_CONSECUTIVE:
             decreasing_trend_index_list.extend(tmp)
             i = last_packet_index
 
-    list.sort(burst_packet_index_list)
-    new_index_list = list(set(burst_packet_index_list))
     timestamps = np.array(timestamps)
-    timestamps = np.delete(timestamps, new_index_list)
+    timestamps = np.delete(timestamps, decreasing_trend_index_list)
     sent_time = np.array(sent_time)
-    sent_time = np.delete(sent_time, new_index_list)
+    sent_time = np.delete(sent_time, decreasing_trend_index_list)
     timestamps = zip(tuple(sent_time), tuple(timestamps))
     timestamps.sort(key=lambda tup: tup[0])
-    return timestamps, new_index_list, standard_derivation
+    return timestamps, decreasing_trend_index_list, standard_derivation
 
 
 def robust_regression_filter(timestamps, slope, constant):
