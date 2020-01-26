@@ -54,25 +54,22 @@ def decreasing_trend_filter(timestamps_tuple, verbose):
     burst_packet_index_list = [0]
     utility.print_verbose("Mean: " + str(mean), verbose)
     utility.print_verbose("Standard Derivation: " + str(standard_derivation), verbose)
-    for i in range(1, len(timestamps) - globals.DT_CONSECUTIVE):
-        if timestamps[i - 1] is None or timestamps[i] is None:
-            continue
-        if timestamps[i - 1] + standard_derivation < timestamps[i]:
-            burst_packet_index_list.append(i)
     # search for consecutive packet sample with decreasing rtt
     decreasing_trend_index_list = []
-    for i in range(len(burst_packet_index_list)):
-        decreasing_trend = True
+    for i in range(1, len(timestamps)):
+        consecutive = 0
         tmp = []
-        last_packet_rtt = timestamps[burst_packet_index_list[i]]
-        for j in range(1, 1 + globals.DT_CONSECUTIVE):
-            if last_packet_rtt < timestamps[burst_packet_index_list[i] + j]:
-                decreasing_trend = False
+        last_packet_index = timestamps[i]
+        for j in range(i + 1, len(timestamps)):
+            if timestamps[last_packet_index] < timestamps[j]:
+                consecutive += 1
+                tmp.append(last_packet_index)
+                last_packet_index = timestamps[j]
+            else:
                 break
-            tmp.append(burst_packet_index_list[i] + j)
-        if decreasing_trend:
+        if consecutive >= globals.DT_CONSECUTIVE:
             decreasing_trend_index_list.extend(tmp)
-    burst_packet_index_list.extend(decreasing_trend_index_list)
+        i = last_packet_index
 
     list.sort(burst_packet_index_list)
     new_index_list = list(set(burst_packet_index_list))
