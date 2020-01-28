@@ -50,6 +50,8 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
     m = 0
     c = 0
     # send N=12 streams
+    pdt = []
+    pct = []
     for i in range(12):
         print("------------Iteration {}-----------".format(i))
         utility.print_verbose("Current Parameters \n Period: {}\n Train length: {}\n Packet size: {}".format(transmission_interval, train_length, packet_size), verbose)
@@ -66,7 +68,7 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
 
         last_ack_number = packet_train_numbers[-1] + 40
         utility.print_verbose("Start transmission", verbose)
-        packet_train_response, unanswered = scapy_util.send_receive_train(target, packet_train_numbers, transmission_interval, verbose)
+        packet_train_response, unanswered = scapy_util.send_receive_train(target, packet_train_numbers, transmission_interval, 3,verbose)
         utility.print_verbose("Transmission finished", verbose)
         # sort train by seq number
         # TODO: divide into substreams
@@ -75,39 +77,41 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
         round_trip_times = scapy_util.calculate_round_trip_time(packet_train_response)
         time.sleep(1)
         pcap_util.convert_to_csv('sender2.pcap', 'sender2.csv', packet_train_numbers)
-        timestamps_tcpdump, unanswered_list_tcpdump, packet_l = pcap_util.analyze_csv('sender2.csv', packet_train_numbers)
-        print(timestamps_tcpdump)
-        median = calculate_median(timestamps_tcpdump)
-
+        timestamps_tcpdump, mean, packet_loss = pcap_util.analyze_csv('sender2.csv', packet_train_numbers)
+        pct.append(trend.pct_metric(zip(*timestamps_tcpdump)[1]))
+        pdt.append(trend.pdt_metric(zip(*timestamps_tcpdump)[1]))
+        utility.print_verbose("PDT: {}".format(pdt), verbose)
+        utility.print_verbose("PCT: {}".format(pct), verbose)
         # Plot round trip times
+        mp.figure(figsize=(20,8))
         round_trip_times.sort(key=lambda x:x[0])
         mp.plot(*zip(*timestamps_tcpdump), linestyle= '--', color='red', label="tcpdump")
         mp.plot(*zip(*round_trip_times), linestyle=':', color='blue', label="scapy")
         mp.ylabel("Round trip time in second")
         mp.xlabel("Time in seconds")
         mp.legend(loc='upper right')
-
+        mp.ylim(0, 2)
         # calculate trend--------
         mp.title("Rate {} bit/s ".format(transmission_rate))
         mp.savefig('rtt{}.svg'.format(i), format='svg')
         mp.show()
         mp.clf()
+        mp.figure(figsize=(20,8))
         mp.plot(*zip(*timestamps_tcpdump), linestyle= '--', color='red', label="tcpdump", marker='s')
-        filtered_timestamps_scapy, filtered = trend.decreasing_trend_filter(round_trip_times, verbose)
+        filtered_timestamps_scapy, filtered, s = trend.decreasing_trend_filter(round_trip_times, verbose)
         # mp.plot(*zip(*filtered_timestamps_scapy), linestyle='-', color='green', label="filtered scapy")
-        filtered_timestamps_tcpdump, filtered = trend.decreasing_trend_filter(timestamps_tcpdump, verbose)
-        print(filtered_timestamps_tcpdump)
+        filtered_timestamps_tcpdump, filtered, s = trend.decreasing_trend_filter(timestamps_tcpdump, verbose)
         mp.plot(*zip(*filtered_timestamps_tcpdump), linestyle='-.', color='purple', label="filtered tcpdump", marker="x")
         sent_time, rtt = zip(*filtered_timestamps_tcpdump)
         A = np.vstack([np.array(list(sent_time)), np.ones(len(sent_time))]).T
         m, c = np.linalg.lstsq(A, np.array(list(rtt)), rcond=None)[0]
         mp.plot(np.array(list(sent_time)),np.array(list(sent_time)) * m + c, 'blue', label="OLS")
         utility.print_verbose("Filtered out: {}".format(len(filtered)), verbose)
-        utility.print_verbose(filtered, verbose)
         print("Slope: " + str(m))
         current_ack_number = last_ack_number
-        c, m = trend.robust_regression_filter(filtered_timestamps_tcpdump, m, c)
-        mp.plot(np.array(list(sent_time)), np.array(list(sent_time)) * m + c, 'green', label="IRLS", marker='o')
+        if len(filtered) < 50:
+            c, m = trend.robust_regression_filter(filtered_timestamps_tcpdump, m, c)
+            mp.plot(np.array(list(sent_time)), np.array(list(sent_time)) * m + c, 'green', label="IRLS", marker='o')
         mp.legend(loc='upper right')
         mp.tick_params(axis='x', which='major')
         mp.title("{} bit/s".format(transmission_rate))
@@ -115,7 +119,26 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
         mp.show()
         mp.clf()
         # # wait that fleets dont interfere
-        time.sleep(1)
+        time.sleep(mean)
+    # plot PCT PDT
+    mp.ylim(-1,1)
+    mp.plot(np.arange(1,13), pdt, linestyle='-', marker='o')
+    mp.axhline(y=0.55, linestyle='--')
+    mp.axhline(y=0.45, linestyle='--')
+    mp.xlabel("# Packet Train")
+    mp.ylabel("PDT metric")
+    mp.title("PDT metric")
+    mp.savefig('pdt_metric.svg', format='svg')
+    mp.clf()
+    mp.ylim(0,1)
+    mp.plot(np.arange(1,13), pct, linestyle='-', marker='o')
+    mp.axhline(y=0.66, linestyle='--')
+    mp.axhline(y=0.54, linestyle='--')
+    mp.xlabel("# Packet Train")
+    mp.ylabel("PCT metric")
+    mp.title("PCT metric")
+    mp.savefig('pct_metric.svg', format='svg')
+    mp.clf()
     # Terminate and return
     print ("[" + str(awb_min) + "," + str(awb_max) + "]")
     return awb_min, awb_max

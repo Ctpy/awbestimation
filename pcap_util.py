@@ -25,6 +25,7 @@ def analyze_csv(input_file, id_list):
     timestamps = []
     unanswered = []
     packet_loss = 0
+    rtt_sum = 0
     for i in id_list:
         try:
             pair = (data[data['tcp.ack'] == i], data[data['tcp.seq'] == i])
@@ -33,6 +34,7 @@ def analyze_csv(input_file, id_list):
             round_trip_time = abs(time_frame_received - time_frame_sent)
             timestamp = (time_frame_sent, round_trip_time)
             timestamps.append(timestamp)
+            rtt_sum += round_trip_time
         except:
             frame = data[data['tcp.ack'] == i]
             time_frame_sent = frame['_ws.col.Time'].item()
@@ -40,4 +42,4 @@ def analyze_csv(input_file, id_list):
             unanswered.append(timestamp)
             packet_loss += 1
 
-    return timestamps, unanswered, packet_loss
+    return timestamps,rtt_sum/(len(id_list)-packet_loss), packet_loss

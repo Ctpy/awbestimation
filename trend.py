@@ -21,13 +21,14 @@ def calculate_trend(timestamps, packet_loss, train_length):
 
 def pct_metric(timestamps):
     # TODO: update
-    increase = 0
+    increase = 0.0
     if len(timestamps) >= globals.MIN_TRAIN_LENGTH:
         for i in range(len(timestamps) - 1):
             if timestamps[i] < timestamps[i + 1]:
-                increase += 1
+                increase += 1.0
         return increase / len(timestamps)
     else:
+        print("ZERO? {}".format(len(timestamps)))
         return -1
 
 
@@ -36,13 +37,14 @@ def pdt_metric(timestamps):
     pdt_average = 0.0
     pdt_sum = 0.0
     if len(timestamps) >= globals.MIN_TRAIN_LENGTH:
-        for i in range(len(timestamps) - 1):
-            if timestamps[i] is None or timestamps[i + 1] is None:
+        for i in range(1, len(timestamps)):
+            if timestamps[i] is None or timestamps[i - 1] is None:
                 continue
             else:
-                pdt_average += timestamps[i] - timestamps[i + 1]
-                pdt_sum += abs(timestamps[i] - timestamps[i + 1])
+                pdt_average += timestamps[i] - timestamps[i - 1]
+                pdt_sum += abs(timestamps[i] - timestamps[i - 1])
         return pdt_average / pdt_sum
+    print("EPSFDDFSD {}".format(len(timestamps)))
     return -1
 
 
@@ -80,7 +82,7 @@ def decreasing_trend_filter(timestamps_tuple, verbose):
     sent_time = np.delete(sent_time, decreasing_trend_index_list)
     timestamps = zip(tuple(sent_time), tuple(timestamps))
     timestamps.sort(key=lambda tup: tup[0])
-    return timestamps, decreasing_trend_index_list, standard_derivation
+    return timestamps, set(decreasing_trend_index_list), standard_derivation
 
 
 def robust_regression_filter(timestamps, slope, constant):
@@ -103,7 +105,7 @@ def robust_regression_filter(timestamps, slope, constant):
         if i > 0:
             converge = False
             for i in range(len(weight_vector)):
-                if math.fabs(new_c - c) < 0.0001 and math.fabs(new_m - m) < 0.0001:
+                if math.fabs(new_c - c) < 0.001 and math.fabs(new_m - m) < 0.001:
                     converge = True
                 else:
                     converge = False
