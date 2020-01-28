@@ -4,7 +4,7 @@ import globals
 import matplotlib.pyplot as mp
 import utility
 
-#import statsmodels.api as sm
+import statsmodels.api as sm
 mp.switch_backend('agg')
 
 def calculate_trend(timestamps, packet_loss, train_length):
@@ -19,27 +19,29 @@ def calculate_trend(timestamps, packet_loss, train_length):
     return
 
 
-def pct_metric(timestamps, packet_loss, train_length):
+def pct_metric(timestamps):
+    # TODO: update
     increase = 0
-    if train_length - packet_loss >= globals.MIN_TRAIN_LENGTH:
-        for i in range(train_length - 1):
-            if timestamps[i][2] < timestamps[i + 1][2]:
+    if len(timestamps) >= globals.MIN_TRAIN_LENGTH:
+        for i in range(len(timestamps) - 1):
+            if timestamps[i] < timestamps[i + 1]:
                 increase += 1
-        return increase / (train_length - packet_loss)
+        return increase / len(timestamps)
     else:
         return -1
 
 
-def pdt_metric(timestamps, packet_loss, train_length):
-    pdt_average = 0
-    pdt_sum = 0
-    if train_length - packet_loss >= globals.MIN_TRAIN_LENGTH:
-        for i in range(train_length - 1):
+def pdt_metric(timestamps):
+    # TODO: update
+    pdt_average = 0.0
+    pdt_sum = 0.0
+    if len(timestamps) >= globals.MIN_TRAIN_LENGTH:
+        for i in range(len(timestamps) - 1):
             if timestamps[i] is None or timestamps[i + 1] is None:
                 continue
             else:
-                pdt_average += timestamps[i][2] - timestamps[i + 1][2]
-                pdt_sum += abs(timestamps[i][2] - timestamps[i + 1][2])
+                pdt_average += timestamps[i] - timestamps[i + 1]
+                pdt_sum += abs(timestamps[i] - timestamps[i + 1])
         return pdt_average / pdt_sum
     return -1
 

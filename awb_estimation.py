@@ -14,67 +14,46 @@ import numpy as np
 mp.switch_backend('agg')
 
 
-def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
+def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False):
     """
     Estimate the available bandwidth to the given target.
     Higher resolution will impact the performance.
 
     :param target -- IP of target to estimate
-    :param capacity -- Bottleneck/Link capacity to the target
+    :param rate -- Bottleneck/Link capacity to the target
     :param resolution -- Accuracy of the estimation
     :param verbose -- more output
     """
-    capacity *= 1000000
-    utility.print_verbose("Capacity is :" + str(capacity) + "bit", verbose)
+    rate *= 1000000
+    utility.print_verbose("Capacity is :" + str(rate) + "bit", verbose)
     utility.print_verbose("Start available bandwidth estimation", verbose)
     # Config Data here
     utility.print_verbose("Initializing parameters", verbose)
-    current_awb = capacity   # start at 75% of capacity
+    current_awb = rate   # start at 75% of capacity
     awb_min = 0  # Check if smaller 0
-    awb_max = capacity  # Check if greater 100
+    awb_max = rate  # Check if greater 100
     pct_trend_list = []
     pdt_trend_list = []
     trend_list = []
     # In Mbits
     percentage = 0.5
-    transmission_rate = capacity * percentage
+    transmission_rate = rate * percentage
     print("Transmission_rate: " + str(transmission_rate))
     # In Byte
     packet_size = 1500 * 8
     # Numbers of packets per train
-    train_length = calculate_train_length(transmission_rate, packet_size)
-    utility.print_verbose("Train_length :" + str(train_length), verbose)
+    train_length = 100
     current_ack_number = 1
-    transmission_interval = calculate_transmission_interval(train_length)
+    transmission_interval = calculate_transmission_interval(rate, packet_size)
     # Probe starts here
     utility.print_verbose("tcpdump", verbose)
-    no_trend_counter = 0
-    step = transmission_rate / 2.0
     m = 0
     c = 0
+    # send N=12 streams
     for i in range(12):
         print("------------Iteration {}-----------".format(i))
-        if i > 0:
-            if m > 0.00001:
-                transmission_rate = transmission_rate - step
-                step /= 2.0
-                awb_max = transmission_rate
-                no_trend_counter = 0
-            elif m < 0.00001 and no_trend_counter < 2:
-                no_trend_counter += 1
-                transmission_rate = transmission_rate + step
-                step /= 2.0
-                awb_min = transmission_rate
-            else:
-                break
-            train_length = calculate_train_length(transmission_rate, packet_size)
-            transmission_interval = calculate_transmission_interval(train_length)
-        print("Currently running with these Parameters: ")
-        utility.print_verbose("Transmission_interval: " + str(transmission_interval) + ":s", verbose)
+        utility.print_verbose("Current Parameters \n Period: {}\n Train length: {}\n Packet size: {}".format(transmission_interval, train_length, packet_size), verbose)
         utility.print_verbose("Generating packet_train", verbose)
-        # if transmission_interval < globals.MIN_TRANSMISSION_INTERVAL:
-        #    transmission_interval = globals.MIN_TRANSMISSION_INTERVAL
-        # TODO recalc
         packet_train_numbers = generate_packet_train(current_ack_number, train_length)
         tcpdump_filter = generate_tcpdump_filter(packet_train_numbers)
         template = '-i leftHost-eth0 -tt -U  -w sender2.pcap'
@@ -90,6 +69,7 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
         packet_train_response, unanswered = scapy_util.send_receive_train(target, packet_train_numbers, transmission_interval, verbose)
         utility.print_verbose("Transmission finished", verbose)
         # sort train by seq number
+        # TODO: divide into substreams
         utility.print_verbose("Calculating RTT", verbose)
         packet_train_response.sort(key=lambda packet: packet[1].seq)
         round_trip_times = scapy_util.calculate_round_trip_time(packet_train_response)
@@ -97,16 +77,17 @@ def estimate_available_bandwidth(target, capacity, resolution, verbose=False):
         pcap_util.convert_to_csv('sender2.pcap', 'sender2.csv', packet_train_numbers)
         timestamps_tcpdump, unanswered_list_tcpdump, packet_l = pcap_util.analyze_csv('sender2.csv', packet_train_numbers)
         print(timestamps_tcpdump)
+        median = calculate_median(timestamps_tcpdump)
+
         # Plot round trip times
-        # plot_results(packet_train_response, round_trip_times, 'rtt{}.png'.format(i), True)
-        # mp.plot(*zip(*np.array([(sent_time, rtt_tcpdump) for sent_time,r,rtt_tcpdump in timestamps_tcpdump].sort(key=lambda x:x[0]))))
         round_trip_times.sort(key=lambda x:x[0])
         mp.plot(*zip(*timestamps_tcpdump), linestyle= '--', color='red', label="tcpdump")
         mp.plot(*zip(*round_trip_times), linestyle=':', color='blue', label="scapy")
         mp.ylabel("Round trip time in second")
         mp.xlabel("Time in seconds")
         mp.legend(loc='upper right')
-        # calculate trend
+
+        # calculate trend--------
         mp.title("Rate {} bit/s ".format(transmission_rate))
         mp.savefig('rtt{}.svg'.format(i), format='svg')
         mp.show()
@@ -175,17 +156,14 @@ def calculate_parameters(trend, train_length, transmission_interval, min_awb, ma
     :param packet_size -- size of each packet in Byte
     """
 
-    # TODO
+    # TODO: Implement rate adjustment algorithm
 
     return
 
 
-def calculate_train_length(transmission_rate, packet_size):
-    return int(math.ceil(transmission_rate/packet_size))
-
-
-def calculate_transmission_interval(train_length):
-    return 1.0/float(train_length)
+def calculate_transmission_interval(rate, packet_size):
+    # TODO Base calc on current target rate
+    return packet_size/rate
 
 
 def plot_results(packet_train_response, round_trip_times, filename='rtt.png', clear=False):
@@ -196,6 +174,13 @@ def plot_results(packet_train_response, round_trip_times, filename='rtt.png', cl
     mp.show()
     if clear:
         mp.clf()
+
+
+def calculate_median(timestamps):
+    sum = 0.0
+    for i in timestamps:
+        sum += i
+    return sum/len(timestamps)
 
 
 if __name__ == '__main__':
