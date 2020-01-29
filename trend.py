@@ -90,21 +90,21 @@ def decreasing_trend_filter(timestamps_tuple, verbose=False):
     return timestamps, set(decreasing_trend_index_list)
 
 
-def robust_regression_filter(timestamps, packet_loss, train_length):
+def robust_regression_filter(timestamps):
     iter_limit = 20
     columns = 2
-    x_matrix = np.zeros(shape=(train_length - packet_loss, columns))
+    x_matrix = np.zeros(shape=(len(timestamps), columns))
     y_matrix = np.array(timestamps)
     residual = 0.0
-    q_matrix = np.zeros(shape=(train_length - packet_loss, columns))
+    q_matrix = np.zeros(shape=(len(timestamps), columns))
     r_matrix = np.zeros(shape=(columns, columns))
     inv_r = np.zeros(shape=(columns, columns))
-    e_matrix = np.zeros(shape=(train_length - packet_loss, columns))
-    weights = [None] * train_length
-    adjacent_factor = np.zeros(shape=(train_length - packet_loss, 1))
-    r_adjacent_factor = np.zeros(shape=(train_length - packet_loss, 1))
+    e_matrix = np.zeros(shape=(len(timestamps), columns))
+    weights = [None] * len(timestamps)
+    adjacent_factor = np.zeros(shape=(len(timestamps), 1))
+    r_adjacent_factor = np.zeros(shape=(len(timestamps), 1))
     j = 0
-    for i in range(train_length - packet_loss):
+    for i in range(len(timestamps)):
         if timestamps[i] is None:
             continue
         else:
@@ -149,12 +149,12 @@ def robust_regression_filter(timestamps, packet_loss, train_length):
     weights = np.array(weights)
     filtered_timestamps = []
     for i in range(len(timestamps)):
-        if weights[i] >= 0.7:
+        if weights[i] > 0.1:
             filtered_timestamps.append(timestamps[i])
 
     # return trend
 
-    return c, m, weights
+    return filtered_timestamps, len(timestamps) - len(filtered_timestamps)
 
 
 def least_square_fit(y_matrix):

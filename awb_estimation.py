@@ -145,12 +145,13 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
     # Decreasing trend filter
     dt_filtered_pct = []
     dt_filtered_pdt = []
-
+    dt_filtered_train_list = []
     for packet_train in rtt_train_list:
         timestamps, filtered = trend.decreasing_trend_filter(packet_train, False)
         dt_filtered_pct.append(trend.pct_metric(zip(*timestamps)[1]))
         dt_filtered_pdt.append(trend.pdt_metric(zip(*timestamps)[1]))
         utility.print_verbose("Filtered out: {}".format(len(filtered)), verbose)
+        dt_filtered_train_list.append(timestamps)
 
     mp.ylim(-1, 1)
     mp.plot(np.arange(1, len(pdt) + 1), pdt, linestyle='-', marker='o', color='blue', label='Original')
@@ -190,9 +191,77 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
         else:
             grey_pct += 1
 
-    utility.print_verbose("Trend after filtering: {}".format(trend_overall), verbose)
+    if increase_pdt / len(pdt) > 0.7:
+        trend_pdt = 2
+    elif no_trend_pdt / len(pdt) > 0.7:
+        trend_pdt = 0
+    else:
+        trend_pdt = 1
+
+    if increase_pct / len(pct) > 0.6:
+        trend_pct = 2
+    elif no_trend_pct / len(pct) > 0.6:
+        trend_pct = 0
+    else:
+        trend_pct = 1
+
+    if trend_pdt == 2 and trend_pct == 2:
+        trend_overall = 2
+    elif trend_pdt == 2 and trend_pct == 1:
+        trend_overall = 2
+    elif trend_pdt == 1 and trend_pct == 2:
+        trend_overall = 2
+
+    utility.print_verbose("Trend after DT filtering: {}".format(trend_overall), verbose)
     # Robust regression filter
 
+    rr_filtered_pct = []
+    rr_filtered_pdt = []
+    rr_filtered_train_list = []
+    for packet_train in dt_filtered_train_list:
+        timestamps = trend.robust_regression_filter(packet_train)
+        rr_filtered_pct.append(trend.pct_metric(zip(*timestamps)[1]))
+        rr_filtered_pdt.append(trend.pdt_metric(zip(*timestamps)[1]))
+        rr_filtered_train_list.append(timestamps)
+
+    for i in rr_filtered_pdt:
+        if i > 0.55:
+            increase_pdt += 1
+        elif i < 0.45:
+            no_trend_pdt += 1
+        else:
+            grey_pdt += 1
+
+    for i in rr_filtered_pct:
+        if i > 0.66:
+            increase_pct += 1
+        elif i < 0.54:
+            no_trend_pct += 1
+        else:
+            grey_pct += 1
+
+    if increase_pdt / len(pdt) > 0.7:
+        trend_pdt = 2
+    elif no_trend_pdt / len(pdt) > 0.7:
+        trend_pdt = 0
+    else:
+        trend_pdt = 1
+
+    if increase_pct / len(pct) > 0.6:
+        trend_pct = 2
+    elif no_trend_pct / len(pct) > 0.6:
+        trend_pct = 0
+    else:
+        trend_pct = 1
+
+    if trend_pdt == 2 and trend_pct == 2:
+        trend_overall = 2
+    elif trend_pdt == 2 and trend_pct == 1:
+        trend_overall = 2
+    elif trend_pdt == 1 and trend_pct == 2:
+        trend_overall = 2
+
+    utility.print_verbose("Trend after RR filtering: {}".format(trend_overall), verbose)
     # Rate adjustment
 
     # Terminate and return
