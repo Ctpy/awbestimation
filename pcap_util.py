@@ -36,10 +36,6 @@ def analyze_csv(input_file, id_list):
             timestamps.append(timestamp)
             rtt_sum += round_trip_time
         except:
-            frame = data[data['tcp.ack'] == i]
-            time_frame_sent = frame['_ws.col.Time'].item()
-            timestamp = (time_frame_sent, None)
-            unanswered.append(timestamp)
             packet_loss += 1
 
     return timestamps,rtt_sum/(len(id_list)-packet_loss), packet_loss

@@ -69,7 +69,7 @@ def decreasing_trend_filter(timestamps_tuple, verbose):
                 tmp.append(last_packet_index)
                 last_packet_index = j
             else:
-                tmp.append(last_packet_index)
+                # tmp.append(last_packet_index)
                 break
         if len(tmp) >= globals.DT_CONSECUTIVE:
             decreasing_trend_index_list.extend(tmp)
@@ -98,28 +98,17 @@ def robust_regression_filter(timestamps, packet_loss, train_length):
     adjacent_factor = np.zeros(shape=(train_length - packet_loss, 1))
     r_adjacent_factor = np.zeros(shape=(train_length - packet_loss, 1))
     j = 0
-    for i in range(train_length):
+    for i in range(train_length-packet_loss):
         if timestamps[i] is None:
             continue
         else:
             x_matrix[i, 0] = 1.0
             x_matrix[i, 1] = i + 1
             j += 1
-    print(x_matrix)
-    # q_matrix, r_matrix = np.linalg.qr(x_matrix)
     r_matrix, q_matrix = qr_decomposition_modified(x_matrix)
-    print(q_matrix)
-    print(r_matrix)
     e_matrix = compute_q_matrix(x_matrix, np.linalg.inv(r_matrix))
-    print("E")
-    print(e_matrix)
     adjacent_factor = compute_adjacent_factor(e_matrix)
-    print(adjacent_factor)
-    print("STD")
-    print(np.std(y_matrix))
-    # print(compute_standard_derivation(y_matrix))
     m, c, sigma_a, sigma_b, chi_square = least_square_fit(y_matrix)
-    print("m: {} | c: {} | sigma_a: {} | sigma_b: {} | chi_square: {}".format(m, c, sigma_a, sigma_b, chi_square))
     small_derivation = 10e-6 * compute_standard_derivation(y_matrix)
     if small_derivation == 0:
         small_derivation = 1
@@ -148,12 +137,9 @@ def robust_regression_filter(timestamps, packet_loss, train_length):
         c_re_weighted = c
 
         c, m = weighted_least_square_fit(y_matrix, weights)
-        print("Iteration: {}".format(it))
-        print("a: {} | a0: {} | b: {} | b0: {}".format(c, c_re_weighted, m, m_re_weighted, ))
         it += 1
     # Filter timestamps with weights
     weights = np.array(weights)
-    print(weights)
     filtered_timestamps = []
     for i in range(len(timestamps)):
         if weights[i] >= 0.7:
@@ -203,7 +189,7 @@ def weighted_least_square_fit(y_matrix, weights):
     sum_weights = 0.0
     for i in range(len(y_matrix)):
         sum_x += x_matrix[i] * weights[i]
-        sum_y += y[i] * weights[i]
+        sum_y += y_matrix[i] * weights[i]
         sum_x_x += x_matrix[i] ** 2 * weights[i]
         sum_x_y += x_matrix[i] * y_matrix[i] * weights[i]
         sum_weights += weights[i]
@@ -255,7 +241,6 @@ def gram_schmidt_modified(q_matrix, x_matrix, r_matrix, rows, columns):
         else:
             for j in range(rows):
                 result = tmp_matrix[j, i] / r_matrix[i, i]
-                print(result)
                 q_matrix[j, i] = result
 
         for k in range(i + 1, columns):
@@ -305,14 +290,10 @@ def compute_standard_derivation(data_set):
     variance = 0.0
     for i in range(len(data_set)):
         mean += data_set[i]
-    print("Mean Sum: " + str(mean))
-    print("len: " + str(len(data_set)))
     mean /= (len(data_set))
-    print("Mean: " + str(mean))
     for i in range(len(data_set)):
         variance += (data_set[i] - mean) ** 2
     variance /= (len(data_set))
-    print("Variance: " + str(variance))
     return math.sqrt(variance)
 
 if __name__ == '__main__':

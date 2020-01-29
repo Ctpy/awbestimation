@@ -10,6 +10,7 @@ from subprocess import PIPE
 import subprocess
 import globals
 import numpy as np
+import timeit
 
 mp.switch_backend('agg')
 
@@ -24,6 +25,7 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
     :param resolution -- Accuracy of the estimation
     :param verbose -- more output
     """
+    start = timeit.default_timer()
     rate *= 1000000
     utility.print_verbose("Capacity is :" + str(rate) + "bit", verbose)
     utility.print_verbose("Start available bandwidth estimation", verbose)
@@ -52,13 +54,13 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
     # send N=12 streams
     pdt = []
     pct = []
-    for i in range(12):
+    for i in range(20):
         print("------------Iteration {}-----------".format(i))
         utility.print_verbose("Current Parameters \n Period: {}\n Train length: {}\n Packet size: {}".format(transmission_interval, train_length, packet_size), verbose)
         utility.print_verbose("Generating packet_train", verbose)
         packet_train_numbers = generate_packet_train(current_ack_number, train_length)
         tcpdump_filter = generate_tcpdump_filter(packet_train_numbers)
-        template = '-i leftHost-eth0 -tt -U  -w sender2.pcap'
+        template = '-i leftHost-eth0 -tt -U  -w sender{}.pcap'.format(i)
         template = template.split(' ')
         f = ['tcpdump']
         f.extend(template)
@@ -69,6 +71,8 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
         last_ack_number = packet_train_numbers[-1] + 40
         utility.print_verbose("Start transmission", verbose)
         packet_train_response, unanswered = scapy_util.send_receive_train(target, packet_train_numbers, transmission_interval, 3,verbose)
+        if len(unanswered) == train_length:
+            continue
         utility.print_verbose("Transmission finished", verbose)
         # sort train by seq number
         # TODO: divide into substreams
@@ -76,8 +80,8 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
         packet_train_response.sort(key=lambda packet: packet[1].seq)
         round_trip_times = scapy_util.calculate_round_trip_time(packet_train_response)
         time.sleep(1)
-        pcap_util.convert_to_csv('sender2.pcap', 'sender2.csv', packet_train_numbers)
-        timestamps_tcpdump, mean, packet_loss = pcap_util.analyze_csv('sender2.csv', packet_train_numbers)
+        pcap_util.convert_to_csv('sender{}.pcap'.format(i), 'sender{}.csv'.format(i), packet_train_numbers)
+        timestamps_tcpdump, mean, packet_loss = pcap_util.analyze_csv('sender{}.csv'.format(i), packet_train_numbers)
         pct.append(trend.pct_metric(zip(*timestamps_tcpdump)[1]))
         pdt.append(trend.pdt_metric(zip(*timestamps_tcpdump)[1]))
         utility.print_verbose("PDT: {}".format(pdt), verbose)
@@ -110,7 +114,7 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
         print("Slope: " + str(m))
         current_ack_number = last_ack_number
         if len(filtered) < 95:
-            c, m = trend.robust_regression_filter(timestamps_tcpdump, packet_loss, train_length)
+            c, m , weights= trend.robust_regression_filter(zip(*timestamps_tcpdump)[1], packet_loss, train_length)
             mp.plot(np.array(list(sent_time)), np.array(list(sent_time)) * m + c, 'green', label="IRLS", marker='o')
         mp.legend(loc='upper right')
         mp.tick_params(axis='x', which='major')
@@ -122,7 +126,7 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
         time.sleep(mean)
     # plot PCT PDT
     mp.ylim(-1,1)
-    mp.plot(np.arange(1,13), pdt, linestyle='-', marker='o')
+    mp.plot(np.arange(1,len(pdt) + 1), pdt, linestyle='-', marker='o')
     mp.axhline(y=0.55, linestyle='--')
     mp.axhline(y=0.45, linestyle='--')
     mp.xlabel("# Packet Train")
@@ -131,7 +135,7 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
     mp.savefig('pdt_metric.svg', format='svg')
     mp.clf()
     mp.ylim(0,1)
-    mp.plot(np.arange(1,13), pct, linestyle='-', marker='o')
+    mp.plot(np.arange(1,len(pct) + 1), pct, linestyle='-', marker='o')
     mp.axhline(y=0.66, linestyle='--')
     mp.axhline(y=0.54, linestyle='--')
     mp.xlabel("# Packet Train")
@@ -140,6 +144,7 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
     mp.savefig('pct_metric.svg', format='svg')
     mp.clf()
     # Terminate and return
+    utility.print_verbose("Runtime for 1 fleet: {}s".format(timeit.default_timer()-start), verbose)
     print ("[" + str(awb_min) + "," + str(awb_max) + "]")
     return awb_min, awb_max
 
