@@ -52,7 +52,8 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
     pdt = []
     pct = []
     rtt_list = []
-    for i in range(20):
+    rtt_train_list = []
+    for i in range(12):
         print("------------Iteration {}-----------".format(i))
         utility.print_verbose(
             "Current Parameters \n Period: {}\n Train length: {}\n Packet size: {}".format(transmission_interval,
@@ -72,6 +73,7 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
         packet_train_response.sort(key=lambda packet: packet[1].seq)
         round_trip_times = scapy_util.calculate_round_trip_time(packet_train_response)
         rtt_list.extend(round_trip_times)
+        rtt_train_list.append(round_trip_times)
         mean = np.mean(zip(*round_trip_times)[1])
         # calculate pdt and pct metric
         pct.append(trend.pct_metric(zip(*round_trip_times)[1]))
@@ -80,25 +82,6 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
         utility.print_verbose("PCT: {}".format(pct), verbose)
         # # wait that fleets dont interfere
         time.sleep(mean)
-    # plot PCT PDT
-    mp.ylim(-1, 1)
-    mp.plot(np.arange(1, len(pdt) + 1), pdt, linestyle='-', marker='o')
-    mp.axhline(y=0.55, linestyle='--')
-    mp.axhline(y=0.45, linestyle='--')
-    mp.xlabel("# Packet Train")
-    mp.ylabel("PDT metric")
-    mp.title("PDT metric")
-    mp.savefig('pdt_metric.svg', format='svg')
-    mp.clf()
-    mp.ylim(0, 1)
-    mp.plot(np.arange(1, len(pct) + 1), pct, linestyle='-', marker='o')
-    mp.axhline(y=0.66, linestyle='--')
-    mp.axhline(y=0.54, linestyle='--')
-    mp.xlabel("# Packet Train")
-    mp.ylabel("PCT metric")
-    mp.title("PCT metric")
-    mp.savefig('pct_metric.svg', format='svg')
-    mp.clf()
 
     # plot RTT of all packet trains
     start_sent_time = rtt_list[0][0]
@@ -157,6 +140,40 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
         trend_overall = 2
     elif trend_pdt == 1 and trend_pct == 2:
         trend_overall = 2
+
+    # Decreasing trend filter
+    dt_filtered_pct = []
+    dt_filtered_pdt = []
+
+    for packet_train in rtt_train_list:
+        timestamps, filtered = trend.decreasing_trend_filter(packet_train, verbose)
+        dt_filtered_pct.append(trend.pct_metric(timestamps))
+        dt_filtered_pdt.append(trend.pdt_metric(timestamps))
+        utility.print_verbose("Filtered out: {}".format(len(filtered)), verbose)
+
+    mp.ylim(-1, 1)
+    mp.plot(np.arange(1, len(pdt) + 1), pdt, linestyle='-', marker='o', color='blue', label='Original')
+    mp.plot(np.arange(1, len(dt_filtered_pdt) + 1), dt_filtered_pdt, linestyle='-', marker='x', color='red', label='DT Filtered')
+    mp.axhline(y=0.55, linestyle='--')
+    mp.axhline(y=0.45, linestyle='--')
+    mp.xlabel("# Packet Train")
+    mp.ylabel("PDT metric")
+    mp.title("PDT metric")
+    mp.savefig('pdt_metric.svg', format='svg')
+    mp.clf()
+    mp.ylim(0, 1)
+    mp.plot(np.arange(1, len(pct) + 1), pct, linestyle='-', marker='o', color='blue', label='Original')
+    mp.plot(np.arange(1, len(dt_filtered_pct) + 1), dt_filtered_pct, linestyle='-', marker='x', color='red', label='DT Filtered')
+    mp.axhline(y=0.66, linestyle='--')
+    mp.axhline(y=0.54, linestyle='--')
+    mp.xlabel("# Packet Train")
+    mp.ylabel("PCT metric")
+    mp.title("PCT metric")
+    mp.savefig('pct_metric.svg', format='svg')
+
+    # Robust regression filter
+
+    # Rate adjustment
 
     # Terminate and return
     utility.print_verbose("Runtime for 1 fleet: {}s".format(timeit.default_timer() - start), verbose)

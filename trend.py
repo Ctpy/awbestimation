@@ -47,7 +47,7 @@ def pdt_metric(timestamps):
     return -1
 
 
-def decreasing_trend_filter(timestamps_tuple, verbose):
+def decreasing_trend_filter(timestamps_tuple, verbose=False):
     sent_time, timestamps = zip(*timestamps_tuple)
     # search for burst
     sent_time = list(sent_time)
@@ -57,6 +57,12 @@ def decreasing_trend_filter(timestamps_tuple, verbose):
     burst_packet_index_list = [0]
     utility.print_verbose("Mean: " + str(mean), verbose)
     utility.print_verbose("Standard Derivation: " + str(standard_derivation), verbose)
+    # search for large gaps
+    gap_index = []
+    for i in range(len(timestamps) - 1):
+        if timestamps[i] + standard_derivation < timestamps[i + 1]:
+            gap_index.append(i + 1)
+
     # search for consecutive packet sample with decreasing rtt
     decreasing_trend_index_list = []
     for i in range(len(timestamps)):
@@ -71,7 +77,7 @@ def decreasing_trend_filter(timestamps_tuple, verbose):
             else:
                 # tmp.append(last_packet_index)
                 break
-        if len(tmp) >= globals.DT_CONSECUTIVE:
+        if len(tmp) >= globals.DT_CONSECUTIVE and set(tmp) & set(gap_index):
             decreasing_trend_index_list.extend(tmp)
             i = last_packet_index
 
@@ -81,7 +87,7 @@ def decreasing_trend_filter(timestamps_tuple, verbose):
     sent_time = np.delete(sent_time, decreasing_trend_index_list)
     timestamps = zip(tuple(sent_time), tuple(timestamps))
     timestamps.sort(key=lambda tup: tup[0])
-    return timestamps, set(decreasing_trend_index_list), standard_derivation
+    return timestamps, set(decreasing_trend_index_list)
 
 
 def robust_regression_filter(timestamps, packet_loss, train_length):
@@ -98,7 +104,7 @@ def robust_regression_filter(timestamps, packet_loss, train_length):
     adjacent_factor = np.zeros(shape=(train_length - packet_loss, 1))
     r_adjacent_factor = np.zeros(shape=(train_length - packet_loss, 1))
     j = 0
-    for i in range(train_length-packet_loss):
+    for i in range(train_length - packet_loss):
         if timestamps[i] is None:
             continue
         else:
@@ -115,7 +121,8 @@ def robust_regression_filter(timestamps, packet_loss, train_length):
     m_re_weighted = 0
     c_re_weighted = 0
     it = 0
-    while it == 0 or abs(m - m_re_weighted) > 1.4901e-08 * max(abs(m), abs(m_re_weighted)) or abs(c - c_re_weighted) > 1.4901e-08 * max(
+    while it == 0 or abs(m - m_re_weighted) > 1.4901e-08 * max(abs(m), abs(m_re_weighted)) or abs(
+            c - c_re_weighted) > 1.4901e-08 * max(
             abs(c), abs(c_re_weighted)):
         if it + 1 > iter_limit:
             break
@@ -296,6 +303,7 @@ def compute_standard_derivation(data_set):
     variance /= (len(data_set))
     return math.sqrt(variance)
 
+
 if __name__ == '__main__':
     np.set_printoptions(suppress=True)
     x = list(map(float,
@@ -385,6 +393,6 @@ if __name__ == '__main__':
     mp.clf()
     x = np.array(x)
     mp.plot(x, y, 'green', marker='x')
-    mp.plot(x,115125.4711 - 263.6245*x, 'red', marker='o')
+    mp.plot(x, 115125.4711 - 263.6245 * x, 'red', marker='o')
     mp.savefig('test_robust.svg', format='svg')
     mp.show()
