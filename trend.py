@@ -11,7 +11,7 @@ mp.switch_backend('agg')
 def calculate_trend(timestamps, packet_loss, train_length):
     np.set_printoptions(suppress=True)
     # Evaluate timestamps
-    # TODO
+
     # Decreasing Trend due to buffering DT filter to filter out large bursts
 
     # Robust Regression filter to filter out small bursts by using Iteratively Re-weighted Least Square method (IRLS)
