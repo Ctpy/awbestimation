@@ -26,25 +26,25 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
     :param verbose -- more output
     """
     start = timeit.default_timer()
-    rate *= 1000000 *1.5
+    rate *= 1000000
     utility.print_verbose("Capacity is :" + str(rate) + "bit", verbose)
     utility.print_verbose("Start available bandwidth estimation", verbose)
     # Config Data here
     utility.print_verbose("Initializing parameters", verbose)
     current_awb = rate  # start at 75% of capacity
     awb_min = 0  # Check if smaller 0
-    awb_max = rate  # Check if greater 100
-
+    awb_max = rate  # Check if greater 100 TODO: increase to max possible rate
+    grey_min = 0
+    grey_max = 0
     # In Mbits
-    percentage = 0.5
-    transmission_rate = rate * percentage
+    transmission_rate = rate
     print("Transmission_rate: " + str(transmission_rate))
     # In Byte
     packet_size = 1500 * 8
     # Numbers of packets per train
     train_length = 100
     current_ack_number = 1
-    transmission_interval = calculate_transmission_interval(rate, packet_size)
+    transmission_interval = calculate_transmission_interval(transmission_rate, packet_size)
     # Probe starts here
     utility.print_verbose("tcpdump", verbose)
 
@@ -141,7 +141,7 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
         trend_overall = 2
     elif trend_pdt == 1 and trend_pct == 2:
         trend_overall = 2
-    utility.print_verbose("Trend after PCT/PDT: {}".format(trend_overall),    verbose)
+    utility.print_verbose("Trend after PCT/PDT: {}".format(trend_overall), verbose)
     # Decreasing trend filter
     dt_filtered_pct = []
     dt_filtered_pdt = []
@@ -155,7 +155,8 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
 
     mp.ylim(-1, 1)
     mp.plot(np.arange(1, len(pdt) + 1), pdt, linestyle='-', marker='o', color='blue', label='Original')
-    mp.plot(np.arange(1, len(dt_filtered_pdt) + 1), dt_filtered_pdt, linestyle='-', marker='x', color='red', label='DT Filtered')
+    mp.plot(np.arange(1, len(dt_filtered_pdt) + 1), dt_filtered_pdt, linestyle='-', marker='x', color='red',
+            label='DT Filtered')
     mp.axhline(y=0.55, linestyle='--')
     mp.axhline(y=0.45, linestyle='--')
     mp.xlabel("# Packet Train")
@@ -166,7 +167,8 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
     mp.clf()
     mp.ylim(0, 1)
     mp.plot(np.arange(1, len(pct) + 1), pct, linestyle='-', marker='o', color='blue', label='Original')
-    mp.plot(np.arange(1, len(dt_filtered_pct) + 1), dt_filtered_pct, linestyle='-', marker='x', color='red', label='DT Filtered')
+    mp.plot(np.arange(1, len(dt_filtered_pct) + 1), dt_filtered_pct, linestyle='-', marker='x', color='red',
+            label='DT Filtered')
     mp.axhline(y=0.66, linestyle='--')
     mp.axhline(y=0.54, linestyle='--')
     mp.xlabel("# Packet Train")
@@ -279,7 +281,8 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
 
     utility.print_verbose("Trend after RR filtering: {}".format(trend_overall), verbose)
     # Rate adjustment
-
+    transmission_rate, awb_min, awb_max, grey_min, grey_max = calculate_parameters(trend_overall, transmission_rate, awb_min, awb_max, grey_min, grey_max)
+    utility.print_verbose("New Range [{},{}]".format(awb_min, awb_max), verbose)
     # Terminate and return
     utility.print_verbose("Runtime for 1 fleet: {}s".format(timeit.default_timer() - start), verbose)
     print ("[" + str(awb_min) + "," + str(awb_max) + "]")
@@ -306,26 +309,45 @@ def generate_packet_train(starting_number, size):
     return train
 
 
-def calculate_parameters(trend, train_length, transmission_interval, min_awb, max_awb, packet_loss_rate, packet_size):
+def calculate_parameters(trend, current_rate, rate_min, rate_max, grey_min, grey_max):
     """
     Adjust awb_estimate parameters according on the result.
 
     :param trend -- the trend of current iteration
-    :param train_length -- packet train length
-    :param transmission_interval -- send time between two consecutive packets
-    :param min_awb - minimal awb bound
-    :param max_awb - maximal awb bound
-    :param packet_loss_rate - packet loss rate
-    :param packet_size -- size of each packet in Byte
+    :param current_rate -- probing rate
+    :param rate_min -- minimal awb bound
+    :param rate_max -- maximal awb bound
+    :param grey_min -- grey trend minimal awb bound
+    :param grey_max -- grey trend maximal awb bound
     """
+    new_rate = 0
+    if trend == 0:
+        rate_min = current_rate
+        if grey_min > 0:
+            new_rate = (grey_min + rate_min) / 2
+        else:
+            new_rate = (rate_max + rate_min) / 2
+    elif trend == 2:
+        rate_max = current_rate
+        if grey_max > 0:
+            new_rate = (grey_max + rate_max) / 2
+        else:
+            new_rate = (rate_max + rate_min) / 2
+    else:
+        if grey_max == 0 and grey_min == 0:
+            grey_max = current_rate
+            grey_min = current_rate
+        if grey_max < current_rate:
+            grey_max = current_rate
+            new_rate = (rate_max + grey_max) / 2
+        elif grey_min > current_rate:
+            grey_min = current_rate
+            new_rate = (rate_min + grey_min) / 2
 
-    # TODO: Implement rate adjustment algorithm
-
-    return
+    return new_rate, rate_min, rate_max, grey_min, grey_max
 
 
 def calculate_transmission_interval(rate, packet_size):
-    # TODO Base calc on current target rate
     return packet_size / rate
 
 
