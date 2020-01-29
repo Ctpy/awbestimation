@@ -6,7 +6,7 @@
   "capacity_delta": 5,
   "duration": 100,
   "switch_count": 3,
-  "cross_traffic": 0.5,
+  "cross_traffic": 0.0,
   "verbose": true,
   "output": "results.csv"
 }
