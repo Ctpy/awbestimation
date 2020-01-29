@@ -34,7 +34,7 @@ def send_receive_train(ip, packet_train_numbers, transmission_interval, timeout=
 def calculate_round_trip_time(packet_train):
     round_trip_times = []
     for pkt in packet_train:
-        round_trip_times.append((pkt[0].sent_time, pkt[1].time - pkt[0].sent_time)
+        round_trip_times.append((pkt[0].sent_time, pkt[1].time - pkt[0].sent_time))
     return round_trip_times
 
 

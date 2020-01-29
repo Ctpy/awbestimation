@@ -26,12 +26,12 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
     :param verbose -- more output
     """
     start = timeit.default_timer()
-    rate *= 1000000
+    rate *= 10000000
     utility.print_verbose("Capacity is :" + str(rate) + "bit", verbose)
     utility.print_verbose("Start available bandwidth estimation", verbose)
     # Config Data here
     utility.print_verbose("Initializing parameters", verbose)
-    current_awb = rate   # start at 75% of capacity
+    current_awb = rate  # start at 75% of capacity
     awb_min = 0  # Check if smaller 0
     awb_max = rate  # Check if greater 100
 
@@ -54,12 +54,16 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
     rtt_list = []
     for i in range(20):
         print("------------Iteration {}-----------".format(i))
-        utility.print_verbose("Current Parameters \n Period: {}\n Train length: {}\n Packet size: {}".format(transmission_interval, train_length, packet_size), verbose)
+        utility.print_verbose(
+            "Current Parameters \n Period: {}\n Train length: {}\n Packet size: {}".format(transmission_interval,
+                                                                                           train_length, packet_size),
+            verbose)
         utility.print_verbose("Generating packet_train", verbose)
         packet_train_numbers = generate_packet_train(current_ack_number, train_length)
         last_ack_number = packet_train_numbers[-1] + 40
         utility.print_verbose("Start transmission", verbose)
-        packet_train_response, unanswered = scapy_util.send_receive_train(target, packet_train_numbers, transmission_interval, 10, verbose)
+        packet_train_response, unanswered = scapy_util.send_receive_train(target, packet_train_numbers,
+                                                                          transmission_interval, 10, verbose)
         if len(unanswered) == train_length:
             continue
         utility.print_verbose("Transmission finished", verbose)
@@ -67,6 +71,7 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
         utility.print_verbose("Calculating RTT", verbose)
         packet_train_response.sort(key=lambda packet: packet[1].seq)
         round_trip_times = scapy_util.calculate_round_trip_time(packet_train_response)
+        rtt_list.extend(round_trip_times)
         mean = np.mean(zip(*round_trip_times)[1])
         # calculate pdt and pct metric
         pct.append(trend.pct_metric(zip(*round_trip_times)[1]))
@@ -76,8 +81,8 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
         # # wait that fleets dont interfere
         time.sleep(mean)
     # plot PCT PDT
-    mp.ylim(-1,1)
-    mp.plot(np.arange(1,len(pdt) + 1), pdt, linestyle='-', marker='o')
+    mp.ylim(-1, 1)
+    mp.plot(np.arange(1, len(pdt) + 1), pdt, linestyle='-', marker='o')
     mp.axhline(y=0.55, linestyle='--')
     mp.axhline(y=0.45, linestyle='--')
     mp.xlabel("# Packet Train")
@@ -85,14 +90,24 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
     mp.title("PDT metric")
     mp.savefig('pdt_metric.svg', format='svg')
     mp.clf()
-    mp.ylim(0,1)
-    mp.plot(np.arange(1,len(pct) + 1), pct, linestyle='-', marker='o')
+    mp.ylim(0, 1)
+    mp.plot(np.arange(1, len(pct) + 1), pct, linestyle='-', marker='o')
     mp.axhline(y=0.66, linestyle='--')
     mp.axhline(y=0.54, linestyle='--')
     mp.xlabel("# Packet Train")
     mp.ylabel("PCT metric")
     mp.title("PCT metric")
     mp.savefig('pct_metric.svg', format='svg')
+    mp.clf()
+
+    # plot RTT of all packet trains
+    start_sent_time = rtt_list[0][0]
+    sent_time, rtt = zip(*rtt_list)
+    mp.plot(sent_time - start_sent_time, rtt, linestyle='-', marker='x')
+    mp.xlabel("Sent time in seconds")
+    mp.ylabel("Round trip time in seconds")
+    mp.savefig('rtt.pdf', format='pdf')
+    mp.figure(figsize=(20, 8))
     mp.clf()
 
     # Determine trend based on PDT/PCT
@@ -122,9 +137,9 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
         else:
             grey_pct += 1
 
-    if increase_pdt/len(pdt) > 0.7:
+    if increase_pdt / len(pdt) > 0.7:
         trend_pdt = 2
-    elif no_trend_pdt/len(pdt) > 0.7:
+    elif no_trend_pdt / len(pdt) > 0.7:
         trend_pdt = 0
     else:
         trend_pdt = 1
@@ -143,9 +158,8 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
     elif trend_pdt == 1 and trend_pct == 2:
         trend_overall = 2
 
-
     # Terminate and return
-    utility.print_verbose("Runtime for 1 fleet: {}s".format(timeit.default_timer()-start), verbose)
+    utility.print_verbose("Runtime for 1 fleet: {}s".format(timeit.default_timer() - start), verbose)
     print ("[" + str(awb_min) + "," + str(awb_max) + "]")
     return awb_min, awb_max
 
@@ -192,7 +206,7 @@ def calculate_parameters(trend, train_length, transmission_interval, min_awb, ma
 
 def calculate_transmission_interval(rate, packet_size):
     # TODO Base calc on current target rate
-    return packet_size/rate
+    return packet_size / rate
 
 
 def plot_results(packet_train_response, round_trip_times, filename='rtt.png', clear=False):
@@ -203,6 +217,7 @@ def plot_results(packet_train_response, round_trip_times, filename='rtt.png', cl
     mp.show()
     if clear:
         mp.clf()
+
 
 if __name__ == '__main__':
     estimate_available_bandwidth(sys.argv[1], float(sys.argv[2]), float(sys.argv[3]), True)
