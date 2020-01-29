@@ -25,6 +25,8 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=0.5, verbose=False
     :param resolution -- Accuracy of the estimation
     :param verbose -- more output
     """
+    mkr = ['.', ',', 'o', 'x', 'D', 'd', '+', '1', '2', '3', '4', 's', 'h', '*']
+    color = ['blue', 'black', 'cyan', 'magenta','green','yellow', 'red', 'violet', 'brown', 'grey', '#eeefff', 'pink']
     start = timeit.default_timer()
     res = resolution * 1000000
     rate *= 10000000
@@ -38,7 +40,7 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=0.5, verbose=False
     grey_min = 0
     grey_max = 0
     # In Mbits
-    transmission_rate = rate
+    transmission_rate = rate * 0.75
     print("Transmission_rate: " + str(transmission_rate))
     # In Byte
     packet_size = 1500 * 8
@@ -51,6 +53,7 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=0.5, verbose=False
     loop_counter = 0
     while loop_counter < iteration_max or abs(awb_min - awb_max) > res:
         # send N=12 streams
+        mp.figure(1)
         pdt = []
         pct = []
         rtt_list = []
@@ -87,20 +90,20 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=0.5, verbose=False
         start_sent_time = rtt_list[0][0]
         sent_time, rtt = zip(*rtt_list)
         sent_time = np.array(sent_time)
-        mp.plot(sent_time - start_sent_time, rtt, linestyle='-', marker='x')
+        mp.figure(figsize=(20, 8))
+        mp.plot(sent_time - start_sent_time, rtt, color=color[loop_counter], marker=mkr[loop_counter], label="{}b/s".format(transmission_rate))
         mp.xlabel("Sent time in seconds")
         mp.ylabel("Round trip time in seconds")
-        mp.savefig('rtt.pdf', format='pdf')
-        mp.figure(figsize=(20, 8))
-        mp.clf()
+        mp.savefig('rtt{}.pdf'.format(loop_counter), format='pdf')
+
 
         # Determine trend based on PDT/PCT
-        increase_pdt = 0
-        grey_pdt = 0
-        no_trend_pdt = 0
-        increase_pct = 0
-        grey_pct = 0
-        no_trend_pct = 0
+        increase_pdt = 0.0
+        grey_pdt = 0.0
+        no_trend_pdt = 0.0
+        increase_pct = 0.0
+        grey_pct = 0.0
+        no_trend_pct = 0.0
 
         trend_pdt = -1
         trend_pct = -1
@@ -114,27 +117,28 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=0.5, verbose=False
                 grey_pdt += 1
 
         for i in pct:
-            if i > 0.66:
+            if i > 0.65:
                 increase_pct += 1
             elif i < 0.54:
                 no_trend_pct += 1
             else:
                 grey_pct += 1
-
-        if increase_pdt / len(pdt) > 0.7:
+        utility.print_verbose("PCT: INC:{} - NO:{} - GRAY:{} - Len{}".format(increase_pct, no_trend_pct, grey_pct, len(pct)), verbose)
+        utility.print_verbose("PDT: INC:{} - NO:{} - GRAY:{} - Len{}".format(increase_pdt, no_trend_pdt, grey_pdt, len(pdt)), verbose)
+        if increase_pdt / len(pdt) > 0.65:
             trend_pdt = 2
-        elif no_trend_pdt / len(pdt) > 0.7:
+        elif no_trend_pdt / len(pdt) > 0.65:
             trend_pdt = 0
         else:
             trend_pdt = 1
 
-        if increase_pct / len(pct) > 0.7:
+        if increase_pct / len(pct) > 0.65:
             trend_pct = 2
-        elif no_trend_pct / len(pct) > 0.7:
+        elif no_trend_pct / len(pct) > 0.65:
             trend_pct = 0
         else:
             trend_pct = 1
-
+        utility.print_verbose("PCT:{}-PDT:{}".format(trend_pct, trend_pdt),verbose)
         if trend_pdt == 2 and trend_pct == 2:
             trend_overall = 2
         elif trend_pdt == 2 and trend_pct == 1:
@@ -155,6 +159,7 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=0.5, verbose=False
 
         utility.print_verbose("PDT: {}".format(dt_filtered_pdt), verbose)
         utility.print_verbose("PCT: {}".format(dt_filtered_pct), verbose)
+        mp.figure(2)
         mp.ylim(-1, 1)
         mp.plot(np.arange(1, len(pdt) + 1), pdt, linestyle='-', marker='o', color='blue', label='Original')
         mp.plot(np.arange(1, len(dt_filtered_pdt) + 1), dt_filtered_pdt, linestyle='-', marker='x', color='red',
@@ -178,13 +183,14 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=0.5, verbose=False
         mp.title("PCT metric")
         mp.legend(loc='upper right')
         mp.savefig('pct_metric.svg', format='svg')
+        mp.clf()
 
-        increase_pdt = 0
-        grey_pdt = 0
-        no_trend_pdt = 0
-        increase_pct = 0
-        grey_pct = 0
-        no_trend_pct = 0
+        increase_pdt = 0.0
+        grey_pdt = 0.0
+        no_trend_pdt = 0.0
+        increase_pct = 0.0
+        grey_pct = 0.0
+        no_trend_pct = 0.0
 
         if trend_overall == -1 or trend_overall == 1:
             for i in dt_filtered_pdt:
@@ -203,16 +209,16 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=0.5, verbose=False
                 else:
                     grey_pct += 1
 
-            if increase_pdt / len(pdt) > 0.7:
+            if increase_pdt / len(pdt) > 0.65:
                 trend_pdt = 2
-            elif no_trend_pdt / len(pdt) > 0.7:
+            elif no_trend_pdt / len(pdt) > 0.65:
                 trend_pdt = 0
             else:
                 trend_pdt = 1
 
-            if increase_pct / len(pct) > 0.7:
+            if increase_pct / len(pct) > 0.65:
                 trend_pct = 2
-            elif no_trend_pct / len(pct) > 0.7:
+            elif no_trend_pct / len(pct) > 0.65:
                 trend_pct = 0
             else:
                 trend_pct = 1
@@ -223,33 +229,25 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=0.5, verbose=False
                 trend_overall = 2
             elif trend_pdt == 1 and trend_pct == 2:
                 trend_overall = 2
-            elif trend_pdt == 0 and trend_pct == 0:
-                trend_overall = 0
-            elif trend_pdt == 0 and trend_pct == 1:
-                trend_overall = 0
-            elif trend_pdt == 1 and trend_pct == 0:
-                trend_overall = 0
-            else:
-                trend_overall = 1
 
             utility.print_verbose("Trend after DT filtering: {}".format(trend_overall), verbose)
             # Robust regression filter
             if trend_overall == -1 or trend_overall == 1:
-                increase_pdt = 0
-                grey_pdt = 0
-                no_trend_pdt = 0
-                increase_pct = 0
-                grey_pct = 0
-                no_trend_pct = 0
+                increase_pdt = 0.0
+                grey_pdt = 0.0
+                no_trend_pdt = 0.0
+                increase_pct = 0.0
+                grey_pct = 0.0
+                no_trend_pct = 0.0
                 rr_filtered_pct = []
                 rr_filtered_pdt = []
                 rr_filtered_train_list = []
                 for packet_train in dt_filtered_train_list:
-                    timestamps = trend.robust_regression_filter(zip(*packet_train)[1])
+                    timestamps, filtered = trend.robust_regression_filter(zip(*packet_train)[1])
                     rr_filtered_pct.append(trend.pct_metric(timestamps))
                     rr_filtered_pdt.append(trend.pdt_metric(timestamps))
                     rr_filtered_train_list.append(timestamps)
-
+                utility.print_verbose("RR Filtered: {}".format(filtered), verbose)
                 utility.print_verbose("PDT: {}".format(rr_filtered_pdt), verbose)
                 utility.print_verbose("PCT: {}".format(rr_filtered_pct), verbose)
 
@@ -269,16 +267,16 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=0.5, verbose=False
                     else:
                         grey_pct += 1
 
-                if increase_pdt / len(pdt) > 0.7:
+                if increase_pdt / len(pdt) > 0.65:
                     trend_pdt = 2
-                elif no_trend_pdt / len(pdt) > 0.7:
+                elif no_trend_pdt / len(pdt) > 0.65:
                     trend_pdt = 0
                 else:
                     trend_pdt = 1
 
-                if increase_pct / len(pct) > 0.7:
+                if increase_pct / len(pct) > 0.65:
                     trend_pct = 2
-                elif no_trend_pct / len(pct) > 0.7:
+                elif no_trend_pct / len(pct) > 0.65:
                     trend_pct = 0
                 else:
                     trend_pct = 1
@@ -357,8 +355,8 @@ def calculate_parameters(trend, current_rate, rate_min, rate_max, grey_min, grey
             new_rate = (rate_max + rate_min) / 2
     else:
         if grey_max == 0 and grey_min == 0:
-            grey_max = current_rate
-            grey_min = current_rate
+            grey_max = current_rate*0.75
+            grey_min = current_rate*0.25
         if grey_max <= current_rate:
             grey_max = current_rate
             new_rate = (rate_max + grey_max) / 2

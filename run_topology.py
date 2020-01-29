@@ -39,7 +39,7 @@ class CrossTrafficTopo(Topo):
         for i in range(0, size):
             sw = self.addSwitch('sw' + str(i))
             # Left link
-            self.addLink(sw, lastNode, delay='50ms', bw=1)
+            self.addLink(sw, lastNode, delay='50ms', bw=5)
             # Bottom Link
             self.addLink(bottomHost, sw, delay='50ms')
             # Upper Link
@@ -47,7 +47,7 @@ class CrossTrafficTopo(Topo):
             lastNode = sw
 
         # Connect last node with main receiver
-        self.addLink(lastNode, rightHost, delay='50ms', bw=1)
+        self.addLink(lastNode, rightHost, delay='50ms', bw=5)
 
 
 def build_topo(switch_count, duration, capacities, cross_traffic, verbose=False):
@@ -131,8 +131,7 @@ def build_topo(switch_count, duration, capacities, cross_traffic, verbose=False)
 
         for i in range(1, switch_count):
             # Sender (logging: &>> sender_log.txt)
-            cmd = 'iperf -c 10.0.{}.2 -t {} -B 10.0.{}.1 -b {}M'.format(i + 1, duration + 2, i,
-                                                                        capacities[i] * cross_traffic)
+            cmd = 'iperf -c 10.0.{}.2 -t {} -B 10.0.{}.1 -b {}M'.format(i + 1, duration + 2, i, capacities[i] * cross_traffic)
             topHost.popen(cmd, stdout=PIPE, stderr=PIPE)
 
         if verbose:
