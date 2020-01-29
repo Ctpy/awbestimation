@@ -109,7 +109,7 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
         utility.print_verbose("Filtered out: {}".format(len(filtered)), verbose)
         print("Slope: " + str(m))
         current_ack_number = last_ack_number
-        if len(filtered) < 50:
+        if len(filtered) < 95:
             c, m = trend.robust_regression_filter(filtered_timestamps_tcpdump, m, c)
             mp.plot(np.array(list(sent_time)), np.array(list(sent_time)) * m + c, 'green', label="IRLS", marker='o')
         mp.legend(loc='upper right')

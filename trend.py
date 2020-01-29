@@ -95,6 +95,8 @@ def robust_regression_filter(timestamps, slope, constant):
         for times in timestamps:
             error = math.fabs((m * times[0] + c) - times[1])
             weight_vector.append(1. / error ** 2)
+        print("Weights Iter: {}".format(i))
+        print(weight_vector)
         x_vector, Y = zip(*timestamps)
         X = sm.add_constant(x_vector)
         wls_model = sm.WLS(Y, X, weights=weight_vector)
