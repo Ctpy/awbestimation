@@ -26,7 +26,7 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
     :param verbose -- more output
     """
     start = timeit.default_timer()
-    rate *= 1000000
+    rate *= 1000000 *1.5
     utility.print_verbose("Capacity is :" + str(rate) + "bit", verbose)
     utility.print_verbose("Start available bandwidth estimation", verbose)
     # Config Data here
@@ -141,7 +141,7 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
         trend_overall = 2
     elif trend_pdt == 1 and trend_pct == 2:
         trend_overall = 2
-    utility.print_verbose("Trend after filtering: {}".format(trend_overall),    verbose)
+    utility.print_verbose("Trend after PCT/PDT: {}".format(trend_overall),    verbose)
     # Decreasing trend filter
     dt_filtered_pct = []
     dt_filtered_pdt = []
@@ -191,9 +191,9 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
         else:
             grey_pct += 1
 
-    if increase_pdt / len(pdt) > 0.7:
+    if increase_pdt / len(pdt) > 0.6:
         trend_pdt = 2
-    elif no_trend_pdt / len(pdt) > 0.7:
+    elif no_trend_pdt / len(pdt) > 0.6:
         trend_pdt = 0
     else:
         trend_pdt = 1
@@ -211,6 +211,14 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
         trend_overall = 2
     elif trend_pdt == 1 and trend_pct == 2:
         trend_overall = 2
+    elif trend_pdt == 0 and trend_pct == 0:
+        trend_overall = 0
+    elif trend_pdt == 0 and trend_pct == 1:
+        trend_overall = 0
+    elif trend_pdt == 1 and trend_pct == 0:
+        trend_overall = 0
+    else:
+        trend_overall = 1
 
     utility.print_verbose("Trend after DT filtering: {}".format(trend_overall), verbose)
     # Robust regression filter
@@ -219,9 +227,9 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
     rr_filtered_pdt = []
     rr_filtered_train_list = []
     for packet_train in dt_filtered_train_list:
-        timestamps = trend.robust_regression_filter(packet_train)
-        rr_filtered_pct.append(trend.pct_metric(zip(*timestamps)[1]))
-        rr_filtered_pdt.append(trend.pdt_metric(zip(*timestamps)[1]))
+        timestamps = trend.robust_regression_filter(zip(*packet_train)[1])
+        rr_filtered_pct.append(trend.pct_metric(timestamps))
+        rr_filtered_pdt.append(trend.pdt_metric(timestamps))
         rr_filtered_train_list.append(timestamps)
 
     for i in rr_filtered_pdt:
@@ -240,9 +248,9 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
         else:
             grey_pct += 1
 
-    if increase_pdt / len(pdt) > 0.7:
+    if increase_pdt / len(pdt) > 0.6:
         trend_pdt = 2
-    elif no_trend_pdt / len(pdt) > 0.7:
+    elif no_trend_pdt / len(pdt) > 0.6:
         trend_pdt = 0
     else:
         trend_pdt = 1
@@ -260,6 +268,14 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
         trend_overall = 2
     elif trend_pdt == 1 and trend_pct == 2:
         trend_overall = 2
+    elif trend_pdt == 0 and trend_pct == 0:
+        trend_overall = 0
+    elif trend_pdt == 0 and trend_pct == 1:
+        trend_overall = 0
+    elif trend_pdt == 1 and trend_pct == 0:
+        trend_overall = 0
+    else:
+        trend_overall = 1
 
     utility.print_verbose("Trend after RR filtering: {}".format(trend_overall), verbose)
     # Rate adjustment
