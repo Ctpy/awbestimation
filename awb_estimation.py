@@ -26,7 +26,7 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
     :param verbose -- more output
     """
     start = timeit.default_timer()
-    rate *= 10000000
+    rate *= 1000000
     utility.print_verbose("Capacity is :" + str(rate) + "bit", verbose)
     utility.print_verbose("Start available bandwidth estimation", verbose)
     # Config Data here
@@ -86,6 +86,7 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
     # plot RTT of all packet trains
     start_sent_time = rtt_list[0][0]
     sent_time, rtt = zip(*rtt_list)
+    sent_time = np.array(sent_time)
     mp.plot(sent_time - start_sent_time, rtt, linestyle='-', marker='x')
     mp.xlabel("Sent time in seconds")
     mp.ylabel("Round trip time in seconds")
@@ -140,15 +141,15 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
         trend_overall = 2
     elif trend_pdt == 1 and trend_pct == 2:
         trend_overall = 2
-
+    utility.print_verbose("Trend after filtering: {}".format(trend_overall),    verbose)
     # Decreasing trend filter
     dt_filtered_pct = []
     dt_filtered_pdt = []
 
     for packet_train in rtt_train_list:
-        timestamps, filtered = trend.decreasing_trend_filter(packet_train, verbose)
-        dt_filtered_pct.append(trend.pct_metric(timestamps))
-        dt_filtered_pdt.append(trend.pdt_metric(timestamps))
+        timestamps, filtered = trend.decreasing_trend_filter(packet_train, False)
+        dt_filtered_pct.append(trend.pct_metric(zip(*timestamps)[1]))
+        dt_filtered_pdt.append(trend.pdt_metric(zip(*timestamps)[1]))
         utility.print_verbose("Filtered out: {}".format(len(filtered)), verbose)
 
     mp.ylim(-1, 1)
@@ -159,6 +160,7 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
     mp.xlabel("# Packet Train")
     mp.ylabel("PDT metric")
     mp.title("PDT metric")
+    mp.legend(loc='upper right')
     mp.savefig('pdt_metric.svg', format='svg')
     mp.clf()
     mp.ylim(0, 1)
@@ -169,8 +171,26 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=10, verbose=False)
     mp.xlabel("# Packet Train")
     mp.ylabel("PCT metric")
     mp.title("PCT metric")
+    mp.legend(loc='upper right')
     mp.savefig('pct_metric.svg', format='svg')
 
+    for i in dt_filtered_pdt:
+        if i > 0.55:
+            increase_pdt += 1
+        elif i < 0.45:
+            no_trend_pdt += 1
+        else:
+            grey_pdt += 1
+
+    for i in dt_filtered_pct:
+        if i > 0.66:
+            increase_pct += 1
+        elif i < 0.54:
+            no_trend_pct += 1
+        else:
+            grey_pct += 1
+
+    utility.print_verbose("Trend after filtering: {}".format(trend_overall), verbose)
     # Robust regression filter
 
     # Rate adjustment
@@ -195,8 +215,6 @@ def generate_packet_train(starting_number, size):
     """
     Generate Acknowledgement numbers for a packet train.
     """
-    print(size)
-    print(type(size))
     train = []
     for i in range(size):
         train.append(1 + starting_number + 40 * i)

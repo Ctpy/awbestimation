@@ -61,7 +61,7 @@ def decreasing_trend_filter(timestamps_tuple, verbose=False):
     gap_index = []
     for i in range(len(timestamps) - 1):
         if timestamps[i] + standard_derivation < timestamps[i + 1]:
-            gap_index.append(i + 1)
+            gap_index.append(i)
 
     # search for consecutive packet sample with decreasing rtt
     decreasing_trend_index_list = []
@@ -70,12 +70,12 @@ def decreasing_trend_filter(timestamps_tuple, verbose=False):
         tmp = []
         last_packet_index = i
         for j in range(i + 1, len(timestamps)):
-            if timestamps[last_packet_index] > timestamps[j]:
+            if timestamps[last_packet_index] < timestamps[j]:
                 consecutive += 1
                 tmp.append(last_packet_index)
                 last_packet_index = j
             else:
-                # tmp.append(last_packet_index)
+                tmp.append(last_packet_index)
                 break
         if len(tmp) >= globals.DT_CONSECUTIVE and set(tmp) & set(gap_index):
             decreasing_trend_index_list.extend(tmp)
