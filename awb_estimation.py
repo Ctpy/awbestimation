@@ -26,7 +26,7 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=0.5, verbose=False
     :param verbose -- more output
     """
     mkr = ['.', ',', 'o', 'x', 'D', 'd', '+', '1', '2', '3', '4', 's', 'h', '*']
-    color = ['blue', 'black', 'cyan', 'magenta','green','yellow', 'red', 'violet', 'brown', 'grey', '#eeefff', 'pink']
+    color = ['blue', 'black', 'cyan', 'magenta', 'green', 'yellow', 'red', 'violet', 'brown', 'grey', '#eeefff', 'pink']
     start = timeit.default_timer()
     res = resolution * 1000000
     rate *= 10000000
@@ -58,7 +58,10 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=0.5, verbose=False
         pct = []
         rtt_list = []
         rtt_train_list = []
-        utility.print_verbose("Current Parameters \n Period: {}\n Train length:     {}\n Packet   size: {}".format(transmission_interval, train_length,             packet_size), verbose)
+        utility.print_verbose(
+            "Current Parameters \n Period: {}\n Train length:     {}\n Packet   size: {}".format(transmission_interval,
+                                                                                                 train_length,
+                                                                                                 packet_size), verbose)
 
         for i in range(12):
             print("------------Fleet {} - Iteration {}-----------".format(loop_counter, i))
@@ -91,11 +94,11 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=0.5, verbose=False
         sent_time, rtt = zip(*rtt_list)
         sent_time = np.array(sent_time)
         mp.figure(figsize=(20, 8))
-        mp.plot(sent_time - start_sent_time, rtt, color=color[loop_counter], marker=mkr[loop_counter], label="{}b/s".format(transmission_rate))
+        mp.plot(sent_time - start_sent_time, rtt, color=color[loop_counter], marker=mkr[loop_counter],
+                label="{}b/s".format(transmission_rate))
         mp.xlabel("Sent time in seconds")
         mp.ylabel("Round trip time in seconds")
-        mp.savefig('rtt{}.pdf'.format(loop_counter), format='pdf')
-
+        mp.savefig('plots/rtt{}.pdf'.format(loop_counter), format='pdf')
 
         # Determine trend based on PDT/PCT
         increase_pdt = 0.0
@@ -123,8 +126,10 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=0.5, verbose=False
                 no_trend_pct += 1
             else:
                 grey_pct += 1
-        utility.print_verbose("PCT: INC:{} - NO:{} - GRAY:{} - Len{}".format(increase_pct, no_trend_pct, grey_pct, len(pct)), verbose)
-        utility.print_verbose("PDT: INC:{} - NO:{} - GRAY:{} - Len{}".format(increase_pdt, no_trend_pdt, grey_pdt, len(pdt)), verbose)
+        utility.print_verbose(
+            "PCT: INC:{} - NO:{} - GRAY:{} - Len{}".format(increase_pct, no_trend_pct, grey_pct, len(pct)), verbose)
+        utility.print_verbose(
+            "PDT: INC:{} - NO:{} - GRAY:{} - Len{}".format(increase_pdt, no_trend_pdt, grey_pdt, len(pdt)), verbose)
         if increase_pdt / len(pdt) > 0.65:
             trend_pdt = 2
         elif no_trend_pdt / len(pdt) > 0.65:
@@ -138,7 +143,7 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=0.5, verbose=False
             trend_pct = 0
         else:
             trend_pct = 1
-        utility.print_verbose("PCT:{}-PDT:{}".format(trend_pct, trend_pdt),verbose)
+        utility.print_verbose("PCT:{}-PDT:{}".format(trend_pct, trend_pdt), verbose)
         if trend_pdt == 2 and trend_pct == 2:
             trend_overall = 2
         elif trend_pdt == 2 and trend_pct == 1:
@@ -170,8 +175,9 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=0.5, verbose=False
         mp.ylabel("PDT metric")
         mp.title("PDT metric")
         mp.legend(loc='upper right')
-        mp.savefig('pdt_metric.svg', format='svg')
+        mp.savefig('plots/pdt_metric.svg', format='svg')
         mp.clf()
+        mp.figure(2)
         mp.ylim(0, 1)
         mp.plot(np.arange(1, len(pct) + 1), pct, linestyle='-', marker='o', color='blue', label='Original')
         mp.plot(np.arange(1, len(dt_filtered_pct) + 1), dt_filtered_pct, linestyle='-', marker='x', color='red',
@@ -182,7 +188,7 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=0.5, verbose=False
         mp.ylabel("PCT metric")
         mp.title("PCT metric")
         mp.legend(loc='upper right')
-        mp.savefig('pct_metric.svg', format='svg')
+        mp.savefig('plots/pct_metric.svg', format='svg')
         mp.clf()
 
         increase_pdt = 0.0
@@ -298,7 +304,9 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=0.5, verbose=False
 
                 utility.print_verbose("Trend after RR filtering: {}".format(trend_overall), verbose)
         # Rate adjustment
-        transmission_rate, awb_min, awb_max, grey_min, grey_max = calculate_parameters(trend_overall, transmission_rate, awb_min, awb_max, grey_min, grey_max)
+        transmission_rate, awb_min, awb_max, grey_min, grey_max = calculate_parameters(trend_overall, transmission_rate,
+                                                                                       awb_min, awb_max, grey_min,
+                                                                                       grey_max)
         utility.print_verbose("New Range [{},{}]".format(awb_min, awb_max), verbose)
         transmission_interval = calculate_transmission_interval(transmission_rate, packet_size)
         # Terminate and return
@@ -355,8 +363,8 @@ def calculate_parameters(trend, current_rate, rate_min, rate_max, grey_min, grey
             new_rate = (rate_max + rate_min) / 2
     else:
         if grey_max == 0 and grey_min == 0:
-            grey_max = current_rate*0.75
-            grey_min = current_rate*0.25
+            grey_max = current_rate * 0.75
+            grey_min = current_rate * 0.25
         if grey_max <= current_rate:
             grey_max = current_rate
             new_rate = (rate_max + grey_max) / 2
@@ -375,7 +383,7 @@ def plot_results(packet_train_response, round_trip_times, filename='rtt.png', cl
     mp.plot(np.array(range(len(packet_train_response))), np.array(round_trip_times), 'o')
     mp.ylabel("Round trip time in second")
     mp.xlabel("Time in seconds")
-    mp.savefig(filename, format='png')
+    mp.savefig('plots/' + filename, format='png')
     mp.show()
     if clear:
         mp.clf()
