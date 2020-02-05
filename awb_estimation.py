@@ -28,7 +28,7 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=0.5, verbose=False
     mkr = ['.', ',', 'o', 'x', 'D', 'd', '+', '1', '2', '3', '4', 's', 'h', '*']
     color = ['blue', 'black', 'cyan', 'magenta', 'green', 'yellow', 'red', 'violet', 'brown', 'grey', '#eeefff', 'pink']
     start = timeit.default_timer()
-    res = resolution * 1000000
+    res = 0.1
     rate *= 10000000
     utility.print_verbose("Capacity is :" + str(rate) + "bit", verbose)
     utility.print_verbose("Start available bandwidth estimation", verbose)
@@ -337,7 +337,7 @@ def generate_packet_train(starting_number, size):
     return train
 
 
-def calculate_parameters(trend, current_rate, rate_min, rate_max, grey_min, grey_max):
+def calculate_parameters(trend, current_rate, rate_min, rate_max, grey_min, grey_max, resolution):
     """
     Adjust awb_estimate parameters according on the result.
 
@@ -347,31 +347,19 @@ def calculate_parameters(trend, current_rate, rate_min, rate_max, grey_min, grey
     :param rate_max -- maximal awb bound
     :param grey_min -- grey trend minimal awb bound
     :param grey_max -- grey trend maximal awb bound
+    :param resolution -- step to probe
     """
     new_rate = 0
     if trend == 0:
         rate_min = current_rate
-        if grey_min > 0:
-            new_rate = (grey_min + rate_min) / 2
-        else:
-            new_rate = (rate_max + rate_min) / 2
+        new_rate = current_rate + (abs(rate_max - rate_min)) * resolution
     elif trend == 2:
         rate_max = current_rate
-        if grey_max > 0:
-            new_rate = (grey_max + rate_max) / 2
-        else:
-            new_rate = (rate_max + rate_min) / 2
+        new_rate = (rate_max + rate_min) / 2
     else:
-        if grey_max == 0 and grey_min == 0:
-            grey_max = current_rate * 0.75
-            grey_min = current_rate * 0.25
-        if grey_max <= current_rate:
-            grey_max = current_rate
-            new_rate = (rate_max + grey_max) / 2
-        elif grey_min > current_rate:
-            grey_min = current_rate
-            new_rate = (rate_min + grey_min) / 2
-
+        rate_max = rate_max - current_rate * resolution
+        rate_min = rate_min + current_rate * resolution
+        new_rate = current_rate + current_rate * resolution
     return new_rate, rate_min, rate_max, grey_min, grey_max
 
 
