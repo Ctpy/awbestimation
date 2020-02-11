@@ -116,6 +116,7 @@ int send_packet_train(int *ack_numbers, size_t size, char *dst, char *src, int t
 {
 	//Create a raw socket
 	int s = socket (PF_INET, SOCK_RAW, IPPROTO_TCP);
+	if(s == -1)
 	{
 		//socket creation failed, may be because of non-root privileges
 		perror("Failed to create socket");
@@ -211,10 +212,11 @@ int send_packet_train(int *ack_numbers, size_t size, char *dst, char *src, int t
 			perror("sendto failed");
 		}
 		//Data send successfully
+        //udelay(timeval);
         struct timeval tv;
         tv.tv_sec = 0;
         tv.tv_usec = timeval;
-        select(0, NULL, NULL, NULL, &tv);
+        select(1, NULL, NULL, NULL, &tv);
         tcph->check = 0;
     }	
 	return 0;

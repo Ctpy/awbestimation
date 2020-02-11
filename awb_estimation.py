@@ -11,7 +11,8 @@ import subprocess
 import globals
 import numpy as np
 import timeit
-
+from scapy.sendrecv import *
+from scapy.layers.inet import *
 mp.switch_backend('agg')
 
 
@@ -29,7 +30,7 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
     color = ['blue', 'black', 'cyan', 'magenta', 'green', 'yellow', 'red', 'violet', 'brown', 'grey', '#eeefff', 'pink']
     start = timeit.default_timer()
     res = 0.1
-    rate *= 5000000
+    rate *= 1500000
     utility.print_verbose("Capacity is :" + str(rate) + "bit", verbose)
     utility.print_verbose("Start available bandwidth estimation", verbose)
     # Config Data here
@@ -68,17 +69,22 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
             utility.print_verbose("Generating packet_train", verbose)
             packet_train_numbers = generate_packet_train(current_ack_number, train_length)
             last_ack_number = packet_train_numbers[-1] + 40
+            packets = []
             utility.print_verbose("Start transmission", verbose)
+            start = timeit.default_timer()
+            sniffer = AsyncSniffer(prn=lambda x: packets.append(x), timeout=5, filter="tcp and port 1234", count= train_length*2, iface='leftHost-eth0')
+            sniffer.start()
             scapy_util.send_packet_train_fast(packet_train_numbers, target, source, transmission_interval, verbose)
-            packet_train_response, unanswered = scapy_util.send_receive_train(target, packet_train_numbers,
-                                                                              transmission_interval, 10, verbose)
-            if len(unanswered) == train_length:
-                continue
+            # packet_train_response, unanswered = scapy_util.send_receive_train(target, packet_train_numbers, transmission_interval, 10, verbose)
             utility.print_verbose("Transmission finished", verbose)
+            sniffer.join()
             # sort train by seq number
+            acks, rsts = order_packets(packets)
+            round_trip_times, unanswered = calc_time(acks, rsts)
+            print("Timer :" + str(timeit.default_timer()-start))
             utility.print_verbose("Calculating RTT", verbose)
-            packet_train_response.sort(key=lambda packet: packet[1].seq)
-            round_trip_times = scapy_util.calculate_round_trip_time(packet_train_response)
+            # packet_train_response.sort(key=lambda packet: packet[1].seq)
+            # round_trip_times = scapy_util.calculate_round_trip_time(packet_train_response)
             rtt_list.extend(round_trip_times)
             rtt_train_list.append(round_trip_times)
             mean = np.mean(zip(*round_trip_times)[1])
@@ -317,6 +323,31 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
     print ("[" + str(awb_min) + "," + str(awb_max) + "]")
     return awb_min, awb_max
 
+def order_packets(packets):
+    resets = []
+    acks = []
+    for p in packets:
+        tcp_layer = p.getlayer(TCP)
+        if tcp_layer.flags == 'A':
+            acks.append(p)
+        else:
+            resets.append(p)
+    resets.sort(key=lambda x: x.seq)
+    acks.sort(key=lambda x: x.ack)
+    return acks, resets
+
+def calc_time(acks, resets):
+    packet_loss = 0
+    packets = []
+    start_time = acks[0].time
+    for i in range(len(acks)):
+        if acks[i].ack == resets[i+packet_loss].seq:
+            round_trip_time = resets[i].time - start_time
+            packets.append((acks[i].time - start_time, round_trip_time))
+        else:
+            packet_loss += 1
+            i -= 1
+    return packets, packet_loss
 
 def generate_tcpdump_filter(packet_train):
     template = "(tcp[4:4] = {} and tcp[8:4] = 0) or (tcp[4:4] = 0 and tcp[8:4] = {})"

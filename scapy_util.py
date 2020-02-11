@@ -3,11 +3,14 @@ from scapy.packet import Raw
 from scapy.sendrecv import *
 import awb_estimation
 import sys
-try:
-    import queue
-except ImportError:
-    import Queue as queue
-
+from ctypes import *
+import os
+import ctypes
+c  = cdll.LoadLibrary(os.path.abspath("send.so"))
+def send_packet_train_fast(ack_numbers, dst, src, transmission_interval, verbose):
+    array = (ctypes.c_int * len(ack_numbers))(*ack_numbers)
+    transmission_interval_u = int(transmission_interval * 1000000)
+    c.send_packet_train(array, len(ack_numbers), dst, src, transmission_interval_u)
 
 def generate_packet(ip, ack_number, payload):
     tcp_ack = Ether()/IP(dst=ip, id=ack_number) / TCP(ack=ack_number, flags='A') / Raw(load=payload)
