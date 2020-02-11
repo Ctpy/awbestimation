@@ -15,7 +15,7 @@ import timeit
 mp.switch_backend('agg')
 
 
-def estimate_available_bandwidth(target, rate=1.0, resolution=0.5, verbose=False):
+def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbose=False):
     """
     Estimate the available bandwidth to the given target.
     Higher resolution will impact the performance.
@@ -29,7 +29,7 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=0.5, verbose=False
     color = ['blue', 'black', 'cyan', 'magenta', 'green', 'yellow', 'red', 'violet', 'brown', 'grey', '#eeefff', 'pink']
     start = timeit.default_timer()
     res = 0.1
-    rate *= 10000000
+    rate *= 5000000
     utility.print_verbose("Capacity is :" + str(rate) + "bit", verbose)
     utility.print_verbose("Start available bandwidth estimation", verbose)
     # Config Data here
@@ -49,9 +49,9 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=0.5, verbose=False
     current_ack_number = 1
     transmission_interval = calculate_transmission_interval(transmission_rate, packet_size)
     # Probe starts here
-    iteration_max = 12
+    iteration_max = 1
     loop_counter = 0
-    while loop_counter < iteration_max or abs(awb_min - awb_max) > res:
+    while loop_counter < iteration_max and  abs(awb_min - awb_max) > res:
         # send N=12 streams
         mp.figure(1)
         pdt = []
@@ -59,16 +59,17 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=0.5, verbose=False
         rtt_list = []
         rtt_train_list = []
         utility.print_verbose(
-            "Current Parameters \n Period: {}\n Train length:     {}\n Packet   size: {}".format(transmission_interval,
+            "Current Parameters \n Period: {}\n Train length:     {}\n Packet   size: {}\n Rate: {}".format(transmission_interval,
                                                                                                  train_length,
-                                                                                                 packet_size), verbose)
+                                                                                                 packet_size, transmission_rate), verbose)
 
-        for i in range(12):
+        for i in range(1):
             print("------------Fleet {} - Iteration {}-----------".format(loop_counter, i))
             utility.print_verbose("Generating packet_train", verbose)
             packet_train_numbers = generate_packet_train(current_ack_number, train_length)
             last_ack_number = packet_train_numbers[-1] + 40
             utility.print_verbose("Start transmission", verbose)
+            scapy_util.send_packet_train_fast(packet_train_numbers, target, source, transmission_interval, verbose)
             packet_train_response, unanswered = scapy_util.send_receive_train(target, packet_train_numbers,
                                                                               transmission_interval, 10, verbose)
             if len(unanswered) == train_length:
@@ -94,7 +95,7 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=0.5, verbose=False
         sent_time, rtt = zip(*rtt_list)
         sent_time = np.array(sent_time)
         mp.figure(figsize=(20, 8))
-        mp.plot(sent_time - start_sent_time, rtt, color=color[loop_counter], marker=mkr[loop_counter],
+        mp.plot(sent_time - start_sent_time, rtt, color=color[loop_counter], marker=mkr[0],
                 label="{}b/s".format(transmission_rate))
         mp.xlabel("Sent time in seconds")
         mp.ylabel("Round trip time in seconds")
@@ -120,9 +121,9 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=0.5, verbose=False
                 grey_pdt += 1
 
         for i in pct:
-            if i > 0.65:
+            if i > 0.6:
                 increase_pct += 1
-            elif i < 0.54:
+            elif i < 0.49:
                 no_trend_pct += 1
             else:
                 grey_pct += 1
@@ -130,21 +131,21 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=0.5, verbose=False
             "PCT: INC:{} - NO:{} - GRAY:{} - Len{}".format(increase_pct, no_trend_pct, grey_pct, len(pct)), verbose)
         utility.print_verbose(
             "PDT: INC:{} - NO:{} - GRAY:{} - Len{}".format(increase_pdt, no_trend_pdt, grey_pdt, len(pdt)), verbose)
-        if increase_pdt / len(pdt) > 0.65:
+        if increase_pdt / len(pdt) > 0.60:
             trend_pdt = 2
-        elif no_trend_pdt / len(pdt) > 0.65:
+        elif no_trend_pdt / len(pdt) > 0.60:
             trend_pdt = 0
         else:
             trend_pdt = 1
 
-        if increase_pct / len(pct) > 0.65:
+        if increase_pct / len(pct) > 0.60:
             trend_pct = 2
-        elif no_trend_pct / len(pct) > 0.65:
+        elif no_trend_pct / len(pct) > 0.60:
             trend_pct = 0
         else:
             trend_pct = 1
         utility.print_verbose("PCT:{}-PDT:{}".format(trend_pct, trend_pdt), verbose)
-        if trend_pdt == 2 and trend_pct == 2:
+        if trend_pdt == 2 or trend_pct == 2:
             trend_overall = 2
         elif trend_pdt == 2 and trend_pct == 1:
             trend_overall = 2
@@ -208,28 +209,28 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=0.5, verbose=False
                     grey_pdt += 1
 
             for i in dt_filtered_pct:
-                if i > 0.66:
+                if i > 0.60:
                     increase_pct += 1
-                elif i < 0.54:
+                elif i < 0.49:
                     no_trend_pct += 1
                 else:
                     grey_pct += 1
 
-            if increase_pdt / len(pdt) > 0.65:
+            if increase_pdt / len(pdt) > 0.60:
                 trend_pdt = 2
-            elif no_trend_pdt / len(pdt) > 0.65:
+            elif no_trend_pdt / len(pdt) > 0.60:
                 trend_pdt = 0
             else:
                 trend_pdt = 1
 
-            if increase_pct / len(pct) > 0.65:
+            if increase_pct / len(pct) > 0.60:
                 trend_pct = 2
-            elif no_trend_pct / len(pct) > 0.65:
+            elif no_trend_pct / len(pct) > 0.60:
                 trend_pct = 0
             else:
                 trend_pct = 1
 
-            if trend_pdt == 2 and trend_pct == 2:
+            if trend_pdt == 2 or trend_pct == 2:
                 trend_overall = 2
             elif trend_pdt == 2 and trend_pct == 1:
                 trend_overall = 2
@@ -266,23 +267,23 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=0.5, verbose=False
                         grey_pdt += 1
 
                 for i in rr_filtered_pct:
-                    if i > 0.66:
+                    if i > 0.60:
                         increase_pct += 1
-                    elif i < 0.54:
+                    elif i < 0.49:
                         no_trend_pct += 1
                     else:
                         grey_pct += 1
 
-                if increase_pdt / len(pdt) > 0.65:
+                if increase_pdt / len(pdt) > 0.60:
                     trend_pdt = 2
-                elif no_trend_pdt / len(pdt) > 0.65:
+                elif no_trend_pdt / len(pdt) > 0.60:
                     trend_pdt = 0
                 else:
                     trend_pdt = 1
 
-                if increase_pct / len(pct) > 0.65:
+                if increase_pct / len(pct) > 0.60:
                     trend_pct = 2
-                elif no_trend_pct / len(pct) > 0.65:
+                elif no_trend_pct / len(pct) > 0.60:
                     trend_pct = 0
                 else:
                     trend_pct = 1
@@ -306,7 +307,7 @@ def estimate_available_bandwidth(target, rate=1.0, resolution=0.5, verbose=False
         # Rate adjustment
         transmission_rate, awb_min, awb_max, grey_min, grey_max = calculate_parameters(trend_overall, transmission_rate,
                                                                                        awb_min, awb_max, grey_min,
-                                                                                       grey_max)
+                                                                                       grey_max, res)
         utility.print_verbose("New Range [{},{}]".format(awb_min, awb_max), verbose)
         transmission_interval = calculate_transmission_interval(transmission_rate, packet_size)
         # Terminate and return
@@ -355,11 +356,15 @@ def calculate_parameters(trend, current_rate, rate_min, rate_max, grey_min, grey
         new_rate = current_rate + (abs(rate_max - rate_min)) * resolution
     elif trend == 2:
         rate_max = current_rate
-        new_rate = (rate_max + rate_min) / 2
+        new_rate = current_rate - (abs(rate_max - rate_min)) * resolution
     else:
         rate_max = rate_max - current_rate * resolution
         rate_min = rate_min + current_rate * resolution
         new_rate = current_rate + current_rate * resolution
+    if rate_min > rate_max:
+        tmp = rate_min
+        rate_mint = rate_max
+        rate_max = tmp
     return new_rate, rate_min, rate_max, grey_min, grey_max
 
 
@@ -378,5 +383,5 @@ def plot_results(packet_train_response, round_trip_times, filename='rtt.png', cl
 
 
 if __name__ == '__main__':
-    estimate_available_bandwidth(sys.argv[1], float(sys.argv[2]), float(sys.argv[3]), True)
+    estimate_available_bandwidth(sys.argv[1], sys.argv[2], float(sys.argv[3]), float(sys.argv[4]), True)
     # estimate_available_bandwidth('google.com', 5, 10, True)
