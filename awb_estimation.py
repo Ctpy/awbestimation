@@ -172,6 +172,7 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
         utility.print_verbose("PDT: {}".format(dt_filtered_pdt), verbose)
         utility.print_verbose("PCT: {}".format(dt_filtered_pct), verbose)
         mp.figure(2)
+        mp.clf()
         mp.ylim(-1, 1)
         mp.plot(np.arange(1, len(pdt) + 1), pdt, linestyle='-', marker='o', color='blue', label='Original')
         mp.plot(np.arange(1, len(dt_filtered_pdt) + 1), dt_filtered_pdt, linestyle='-', marker='x', color='red',
