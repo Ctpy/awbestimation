@@ -48,6 +48,7 @@ def pdt_metric(timestamps):
 
 
 def decreasing_trend_filter(timestamps_tuple, verbose=False):
+    print(len(timestamps_tuple))
     sent_time, timestamps = zip(*timestamps_tuple)
     # search for burst
     sent_time = list(sent_time)
@@ -61,8 +62,9 @@ def decreasing_trend_filter(timestamps_tuple, verbose=False):
     gap_index = []
     for i in range(len(timestamps) - 1):
         if timestamps[i] + standard_derivation < timestamps[i + 1]:
-            gap_index.append(i)
-
+            gap_index.append(i+1)
+    print("gap")
+    print(gap_index)
     # search for consecutive packet sample with decreasing rtt
     decreasing_trend_index_list = []
     for i in range(len(timestamps)):
@@ -70,22 +72,30 @@ def decreasing_trend_filter(timestamps_tuple, verbose=False):
         tmp = []
         last_packet_index = i
         for j in range(i + 1, len(timestamps)):
-            if timestamps[last_packet_index] < timestamps[j]:
+            if timestamps[last_packet_index] > timestamps[j]:
                 consecutive += 1
                 tmp.append(last_packet_index)
                 last_packet_index = j
             else:
                 tmp.append(last_packet_index)
                 break
+        print(tmp)
         if len(tmp) >= globals.DT_CONSECUTIVE and set(tmp) & set(gap_index):
             decreasing_trend_index_list.extend(tmp)
             i = last_packet_index
+    print decreasing_trend_index_list
+    decreasing_trend_index_list = list(set(decreasing_trend_index_list))
+    decreasing_trend_index_list.sort()
+    print decreasing_trend_index_list
+    decreasing_trend_index_list = np.array(decreasing_trend_index_list)
 
     timestamps = np.array(timestamps)
     timestamps = np.delete(timestamps, decreasing_trend_index_list)
+    print(len(decreasing_trend_index_list))
     sent_time = np.array(sent_time)
     sent_time = np.delete(sent_time, decreasing_trend_index_list)
     timestamps = zip(tuple(sent_time), tuple(timestamps))
+    print(len(timestamps))
     timestamps.sort(key=lambda tup: tup[0])
     return timestamps, set(decreasing_trend_index_list)
 
@@ -357,6 +367,8 @@ if __name__ == '__main__':
          1.4, 1.39, 1.37, 1.35, 1.33, 1.39, 1.45, 1.49, 1.52, 1.55, 1.59, 2.1, 1.96, 1.82, 1.67,
          1.65, 1.6, 1.62, 1.69, 1.99, 1.96, 1.95, 1.93, 1.8, 1.82, 1.84, 2.4, 2.25, 2.1, 1.98,
          1.85, 1.83, 1.82, 1.8, 1.78])
+    print(y_decreasing_trend[70])
+    print(y_decreasing_trend[71])
     # print("x len: " + str(len(x)))
     # print("y len: " + str(len(y)))
     # mp.scatter(np.array(x), np.array(y))
@@ -388,6 +400,7 @@ if __name__ == '__main__':
     mp.plot(x2, y_decreasing_trend, 'green', label="unfiltered", marker='x')
     mp.plot(*zip(*new_timestamps), color='blue', label="filtered", marker='x')
     mp.tick_params(axis='x', which='major')
+    mp.legend(loc='lower right')
     mp.savefig('plots/test_dt.svg', format='svg')
     mp.show()
     mp.clf()
