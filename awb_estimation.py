@@ -52,7 +52,7 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
     # Probe starts here
     iteration_max = 1
     loop_counter = 0
-    while loop_counter < iteration_max and  abs(awb_min - awb_max) > res:
+    while loop_counter < iteration_max and abs(awb_min - awb_max) > res:
         # send N=12 streams
         mp.figure(1)
         pdt = []
@@ -64,7 +64,7 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
                                                                                                  train_length,
                                                                                                  packet_size, transmission_rate), verbose)
 
-        for i in range(1):
+        for i in range(12):
             print("------------Fleet {} - Iteration {}-----------".format(loop_counter, i))
             utility.print_verbose("Generating packet_train", verbose)
             packet_train_numbers = generate_packet_train(current_ack_number, train_length)
@@ -179,10 +179,10 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
         mp.axhline(y=0.55, linestyle='--')
         mp.axhline(y=0.45, linestyle='--')
         mp.xlabel("# Packet Train")
-        mp.ylabel("PDT metric")
+        mp.ylabel("Ratio")
         mp.title("PDT metric")
         mp.legend(loc='upper right')
-        mp.savefig('plots/pdt_metric.svg', format='svg')
+        mp.savefig('plots/pdt-metric.pdf', format='pdf')
         mp.clf()
         mp.figure(2)
         mp.ylim(0, 1)
@@ -192,10 +192,10 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
         mp.axhline(y=0.66, linestyle='--')
         mp.axhline(y=0.54, linestyle='--')
         mp.xlabel("# Packet Train")
-        mp.ylabel("PCT metric")
+        mp.ylabel("Ratio")
         mp.title("PCT metric")
         mp.legend(loc='upper right')
-        mp.savefig('plots/pct_metric.svg', format='svg')
+        mp.savefig('plots/pct-metric.pdf', format='pdf')
         mp.clf()
 
         increase_pdt = 0.0
