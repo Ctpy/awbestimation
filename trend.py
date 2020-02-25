@@ -100,7 +100,8 @@ def decreasing_trend_filter(timestamps_tuple, verbose=False):
     return timestamps, set(decreasing_trend_index_list)
 
 
-def robust_regression_filter(timestamps):
+def robust_regression_filter(timestamps_tuple):
+    sent_time, timestamps = zip(*timestamps_tuple)
     iter_limit = 20
     columns = 2
     x_matrix = np.zeros(shape=(len(timestamps), columns))
@@ -157,14 +158,20 @@ def robust_regression_filter(timestamps):
         it += 1
     # Filter timestamps with weights
     weights = np.array(weights)
-    filtered_timestamps = []
+    filtered_timestamps_index = []
+    print "weights"
+    print weights
     for i in range(len(timestamps)):
-        if weights[i] > 0.1:
-            filtered_timestamps.append(timestamps[i])
-
+        if weights[i] < 0.5:
+            filtered_timestamps_index.append(i)
+    print(c_re_weighted, m_re_weighted)
+    print (c,m)
     # return trend
-
-    return filtered_timestamps, len(timestamps) - len(filtered_timestamps)
+    timestamps = np.delete(timestamps, filtered_timestamps_index)
+    sent_time = np.delete(sent_time, filtered_timestamps_index)
+    timestamps_tuple = zip(tuple(sent_time), tuple(timestamps))
+    timestamps_tuple.sort(key=lambda tup: tup[0])
+    return timestamps_tuple, len(filtered_timestamps_index)
 
 
 def least_square_fit(y_matrix):
@@ -397,20 +404,17 @@ if __name__ == '__main__':
     new_timestamps, filtered = decreasing_trend_filter(timestamps, True)
     # Plot here
     mp.figure(figsize=(12, 6))
-    mp.plot(x2, y_decreasing_trend, 'green', label="unfiltered", marker='x')
-    mp.plot(*zip(*new_timestamps), color='blue', label="filtered", marker='x')
+    mp.plot(x2, y_decreasing_trend, 'green', label="Unfiltered", marker='x')
+    mp.plot(*zip(*new_timestamps), color='blue', label="DT filtered", marker='x')
+    x = np.array(x)
+    timestamps, filtered_out = robust_regression_filter(new_timestamps)
+    print filtered_out
+    mp.plot(*zip(*timestamps), color='red', label="IRLS filtered", marker='x')
+    mp.plot(x2, 0.16377110387051017 + 0.0098161760272016969 * 100 * np.array(x2), color='black', label='Trend')
     mp.tick_params(axis='x', which='major')
     mp.legend(loc='lower right')
     mp.xlabel("Time in seconds")
     mp.ylabel("Round trip time in seconds")
-    mp.title("Decreasing trend filter")
+    mp.title("Filtering")
     mp.savefig('plots/test-dt.pdf', format='pdf')
-    mp.show()
-    mp.clf()
-    x = np.array(x)
-    mp.plot(x, y, 'green', marker='x')
-    mp.plot(x, 115125.4711*0.001 - 263.6245*0.001 * x, 'red')
-    mp.xlabel("Packet number")
-    mp.ylabel("Round trip time in milliseconds ")
-    mp.savefig('plots/test-robust.pdf', format='pdf')
     mp.show()
