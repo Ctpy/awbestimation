@@ -9,6 +9,7 @@ import matplotlib.pyplot as mp
 from subprocess import PIPE
 import subprocess
 import globals
+import json
 import numpy as np
 import timeit
 from scapy.sendrecv import *
@@ -322,7 +323,10 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
         loop_counter += 1
         time.sleep(2)
     print ("[" + str(awb_min) + "," + str(awb_max) + "]")
-    return awb_min, awb_max
+    data = {'awb': [awb_min, awb_max]}
+    with open('result.json', 'w') as f:
+        json.dump(data, f)
+
 
 def order_packets(packets):
     resets = []
@@ -336,6 +340,7 @@ def order_packets(packets):
     resets.sort(key=lambda x: x.seq)
     acks.sort(key=lambda x: x.ack)
     return acks, resets
+
 
 def calc_time(acks, resets):
     packet_loss = 0
