@@ -10,7 +10,6 @@ def main(test_config):
     parser = argparse.ArgumentParser()
     parser.add_argument('config', help='Path to the config file')
     args = parser.parse_args()
-
     # Get parameters from json input and prepare test
     test_parameters = prepare_test.parse_config(test_config)
     bottleneck = min(test_parameters['capacities'])

@@ -79,23 +79,18 @@ def decreasing_trend_filter(timestamps_tuple, verbose=False):
             else:
                 tmp.append(last_packet_index)
                 break
-        print(tmp)
         if len(tmp) >= globals.DT_CONSECUTIVE and set(tmp) & set(gap_index):
             decreasing_trend_index_list.extend(tmp)
             i = last_packet_index
-    print decreasing_trend_index_list
     decreasing_trend_index_list = list(set(decreasing_trend_index_list))
     decreasing_trend_index_list.sort()
-    print decreasing_trend_index_list
     decreasing_trend_index_list = np.array(decreasing_trend_index_list)
 
     timestamps = np.array(timestamps)
     timestamps = np.delete(timestamps, decreasing_trend_index_list)
-    print(len(decreasing_trend_index_list))
     sent_time = np.array(sent_time)
     sent_time = np.delete(sent_time, decreasing_trend_index_list)
     timestamps = zip(tuple(sent_time), tuple(timestamps))
-    print(len(timestamps))
     timestamps.sort(key=lambda tup: tup[0])
     return timestamps, set(decreasing_trend_index_list)
 
@@ -159,13 +154,9 @@ def robust_regression_filter(timestamps_tuple):
     # Filter timestamps with weights
     weights = np.array(weights)
     filtered_timestamps_index = []
-    print "weights"
-    print weights
     for i in range(len(timestamps)):
         if weights[i] < 0.5:
             filtered_timestamps_index.append(i)
-    print(c_re_weighted, m_re_weighted)
-    print (c,m)
     # return trend
     timestamps = np.delete(timestamps, filtered_timestamps_index)
     sent_time = np.delete(sent_time, filtered_timestamps_index)

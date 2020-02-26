@@ -323,7 +323,7 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
         loop_counter += 1
         time.sleep(2)
     print ("[" + str(awb_min) + "," + str(awb_max) + "]")
-    data = {'awb': [awb_min, awb_max]}
+    data = {'result': [awb_min, awb_max]}
     with open('result.json', 'w') as f:
         json.dump(data, f)
 

@@ -1,0 +1,1 @@
+{"capacity_range": [21, 73], "verbose": true, "switch_count": 1, "cross_traffic": 0.5, "output": "result.csv", "duration": 180, "capacity_delta": 1}

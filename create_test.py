@@ -15,6 +15,7 @@ def create_test_case(range_min, range_max, switch_count_min, switch_count_max, t
     data = {'capacity_range': capacity_range,
             'capacity_delta': 1,
             'duration': 180,
+            'switch_count': switch_count,
             'cross_traffic': cross_traffic,
             'verbose': True,
             'output': output

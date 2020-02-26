@@ -4,7 +4,7 @@ import subprocess
 from random import random
 import run_test
 import create_test
-
+from argparse import Namespace
 
 def run_test_environment(test_config):
     # read the test specification
@@ -22,7 +22,8 @@ def run_test_environment(test_config):
     # loop - test_specification
     for i in range(iteration):
         # run test
-        run_test.main(test_config)
+        print("Run test: " + test_config)
+        run_test.main(Namespace(config=test_config))
         # evaluate test
         result = None
         with open('result.json', 'r') as f:

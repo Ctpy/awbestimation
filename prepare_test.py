@@ -39,7 +39,7 @@ def parse_config(args):
     """
     # Result folder structure: config filename + current time stamp
     ret = {'folder_name': args.config.replace('.json', '') + str(int(time.time()))}
-
+    print(ret)
     # Read json file
     try:
         with open(args.config) as json_file:
