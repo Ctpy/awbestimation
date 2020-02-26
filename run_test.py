@@ -5,14 +5,14 @@ import run_topology
 import numpy as np
 
 
-def main(test_config_file):
+def main():
     # Initialize argument parser
     parser = argparse.ArgumentParser()
     parser.add_argument('config', help='Path to the config file')
     args = parser.parse_args()
 
     # Get parameters from json input and prepare test
-    test_parameters = prepare_test.parse_config(test_config_file)
+    test_parameters = prepare_test.parse_config(args)
     bottleneck = min(test_parameters['capacities'])
 
     # Run setup using input parameters
@@ -100,5 +100,5 @@ def cross_traffic_test():
 
 
 if __name__ == '__main__':
-    main("test_config.json")
+    main()
     # cross_traffic_test()
