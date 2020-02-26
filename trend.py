@@ -408,7 +408,6 @@ if __name__ == '__main__':
     mp.plot(*zip(*new_timestamps), color='blue', label="DT filtered", marker='x')
     x = np.array(x)
     timestamps, filtered_out = robust_regression_filter(new_timestamps)
-    print filtered_out
     mp.plot(*zip(*timestamps), color='red', label="IRLS filtered", marker='x')
     mp.plot(x2, 0.16377110387051017 + 0.0098161760272016969 * 100 * np.array(x2), color='black', label='Trend')
     mp.tick_params(axis='x', which='major')
