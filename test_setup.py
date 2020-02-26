@@ -2,7 +2,7 @@ import json
 import math
 import subprocess
 from random import random
-
+import run_test
 import create_test
 
 
@@ -22,8 +22,7 @@ def run_test_environment(test_config):
     # loop - test_specification
     for i in range(iteration):
         # run test
-        subprocess.call(['sudo', 'python', 'run_test.py', test_config])
-
+        run_test.main(test_config)
         # evaluate test
         result = None
         with open('result.json', 'r') as f:
