@@ -84,6 +84,7 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
             start = timeit.default_timer()
             sniffer = AsyncSniffer(prn=lambda x: packets.append(x), timeout=5, filter="tcp and port 1234", count=train_length*2, iface='leftHost-eth0')
             sniffer.start()
+            time.sleep(0.5)
             scapy_util.send_packet_train_fast(packet_train_numbers, target, source, transmission_interval, verbose)
             # packet_train_response, unanswered = scapy_util.send_receive_train(target, packet_train_numbers, transmission_interval, 10, verbose)
             utility.print_verbose("Transmission finished", verbose)
@@ -222,6 +223,8 @@ def calc_time(acks, resets):
     packets = []
     start_time = acks[0].time
     for i in range(len(acks)):
+        if len(acks) >= i + packet_loss:
+            break
         if acks[i].ack == resets[i+packet_loss].seq:
             round_trip_time = resets[i].time - start_time
             packets.append((acks[i].time - start_time, round_trip_time))
