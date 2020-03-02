@@ -220,14 +220,16 @@ def calc_time(acks, resets):
     packet_loss = 0
     packets = []
     start_time = acks[0].time
+    counter = 0
     for i in range(len(acks)):
-        if len(acks) >= i + packet_loss:
-            break
-        if acks[i].ack == resets[i+packet_loss].seq:
+        if len(acks) >= i + counter:
+            packet_loss += 1
+            continue
+        elif acks[i].ack == resets[i+counter].seq:
             round_trip_time = resets[i].time - start_time
             packets.append((acks[i].time - start_time, round_trip_time))
         else:
-            packet_loss += 1
+            counter += 1
             i -= 1
             print("Ack: " + str(acks[i]))
     return packets, packet_loss
