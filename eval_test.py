@@ -46,8 +46,6 @@ def evaluate_result(result_file, bottleneck, cross_traffic_delta):
     # Criteria 4: Stability - Errors?
 
     # Evaluate using old knowledge
+
     # TODO: Store all results in a csv
     return None
-
-if __name__ == '__main__':
-    evaluate_result()

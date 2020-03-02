@@ -99,7 +99,6 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
             # round_trip_times = scapy_util.calculate_round_trip_time(packet_train_response)
             rtt_list.extend(round_trip_times)
             rtt_train_list.append(round_trip_times)
-            mean = np.mean(zip(*round_trip_times)[1])
             # calculate pdt and pct metric
             pct.append(trend.pct_metric(zip(*round_trip_times)[1]))
             pdt.append(trend.pdt_metric(zip(*round_trip_times)[1]))
@@ -108,8 +107,7 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
             # # wait that fleets dont interfere
             end_fleet_iteration = timeit.default_timer() - start_fleet_iteration
             iteration_times.append(end_fleet_iteration)
-            if mean != 0:
-                time.sleep(abs(mean))
+            time.sleep(1)
 
         # plot RTT of all packet trains
         start_sent_time = rtt_list[0][0]
@@ -233,6 +231,7 @@ def calc_time(acks, resets):
             i -= 1
             print("Ack: " + str(acks[i]))
     return packets, packet_loss
+
 
 def generate_tcpdump_filter(packet_train):
     template = "(tcp[4:4] = {} and tcp[8:4] = 0) or (tcp[4:4] = 0 and tcp[8:4] = {})"

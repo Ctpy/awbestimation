@@ -26,6 +26,7 @@ def run_test_environment(test_config):
         # TODO: Evaluate results
         eval_test.evaluate_result('result.json', bottleneck * 10**6, cross_traffic_default)
 
+
     # loop - tweak cross traffic
     # for i in range(iteration):
     #     random_traffic = cross_traffic_default + random.uniform(cross_traffic_delta[0], cross_traffic_delta[1])
