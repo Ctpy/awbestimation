@@ -228,6 +228,7 @@ def calc_time(acks, resets):
         else:
             packet_loss += 1
             i -= 1
+            print("Ack: " + str(acks[i]))
     return packets, packet_loss
 
 def generate_tcpdump_filter(packet_train):
