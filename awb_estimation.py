@@ -31,7 +31,6 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
     color = ['blue', 'black', 'cyan', 'magenta', 'green', 'yellow', 'red', 'violet', 'brown', 'grey', '#eeefff', 'pink']
     start = timeit.default_timer()
     res = 0.1
-    rate *= 1500000
     utility.print_verbose("Capacity is :" + str(rate) + "bit", verbose)
     utility.print_verbose("Start available bandwidth estimation", verbose)
     # Config Data here
@@ -131,7 +130,6 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
             timestamps, filtered = trend.decreasing_trend_filter(packet_train, False)
             dt_filtered_pct.append(trend.pct_metric(zip(*timestamps)[1]))
             dt_filtered_pdt.append(trend.pdt_metric(zip(*timestamps)[1]))
-            utility.print_verbose("Filtered out: {}".format(len(filtered)), verbose)
             dt_filtered_train_list.append(timestamps)
 
         # PCT/PDT metric visualization

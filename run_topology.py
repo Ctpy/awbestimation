@@ -142,7 +142,7 @@ def build_topo(switch_count, duration, capacities, cross_traffic, verbose=False)
         if verbose:
             print('Running main file transfer...')
         # leftHost.cmd('iperf -t {} -c {} &'.format(duration, rightHost.IP()))
-        print(leftHost.cmd('sudo python awb_estimation.py {} {} {} {}'.format(leftHost.IP(), rightHost.IP(), 1, 10)))
+        print(leftHost.cmd('sudo python awb_estimation.py {} {} {} {}'.format(leftHost.IP(), rightHost.IP(), min(capacities), 5)))
     except (KeyboardInterrupt, Exception) as e:
         if isinstance(e, KeyboardInterrupt):
             print('\nReceived keyboard interrupt. Stop Mininet.')
