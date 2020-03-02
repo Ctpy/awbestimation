@@ -64,7 +64,6 @@ def calculate_trend(pdt, pct, verbose):
 
 
 def pct_metric(timestamps):
-    # TODO: update
     increase = 0.0
     if len(timestamps) >= globals.MIN_TRAIN_LENGTH:
         for i in range(len(timestamps) - 1):
@@ -76,7 +75,6 @@ def pct_metric(timestamps):
 
 
 def pdt_metric(timestamps):
-    # TODO: update
     pdt_average = 0.0
     pdt_sum = 0.0
     if len(timestamps) >= globals.MIN_TRAIN_LENGTH:
@@ -91,7 +89,6 @@ def pdt_metric(timestamps):
 
 
 def decreasing_trend_filter(timestamps_tuple, verbose=False):
-    print(len(timestamps_tuple))
     sent_time, timestamps = zip(*timestamps_tuple)
     # search for burst
     sent_time = list(sent_time)
@@ -106,8 +103,6 @@ def decreasing_trend_filter(timestamps_tuple, verbose=False):
     for i in range(len(timestamps) - 1):
         if timestamps[i] + standard_derivation < timestamps[i + 1]:
             gap_index.append(i + 1)
-    print("gap")
-    print(gap_index)
     # search for consecutive packet sample with decreasing rtt
     decreasing_trend_index_list = []
     for i in range(len(timestamps)):
@@ -128,7 +123,6 @@ def decreasing_trend_filter(timestamps_tuple, verbose=False):
     decreasing_trend_index_list = list(set(decreasing_trend_index_list))
     decreasing_trend_index_list.sort()
     decreasing_trend_index_list = np.array(decreasing_trend_index_list)
-
     timestamps = np.array(timestamps)
     timestamps = np.delete(timestamps, decreasing_trend_index_list)
     sent_time = np.array(sent_time)

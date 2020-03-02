@@ -31,7 +31,7 @@ def evaluate_result(result_file, bottleneck, cross_traffic_delta):
                              math.fabs(estimated_available_bandwidth[1] - true_available_bandwidth))
         relative_error = min(math.fabs(1 - estimated_available_bandwidth[0] / true_available_bandwidth),
                              math.fabs(1 - estimated_available_bandwidth[1] / true_available_bandwidth))
-    print("In scope: " + in_scope)
+    print("In scope: " + str(in_scope))
     print("Relative Error" + str(relative_error))
     print("Absolute Error" + str(absolute_error))
 
