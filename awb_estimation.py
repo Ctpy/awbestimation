@@ -82,13 +82,14 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
             packets = []
             utility.print_verbose("Start transmission", verbose)
             start = timeit.default_timer()
-            sniffer = AsyncSniffer(prn=lambda x: packets.append(x), timeout=5, filter="tcp and port 1234", count= train_length*2, iface='leftHost-eth0')
+            sniffer = AsyncSniffer(prn=lambda x: packets.append(x), timeout=15, filter="tcp and port 1234", count= train_length*2, iface='leftHost-eth0')
             sniffer.start()
             scapy_util.send_packet_train_fast(packet_train_numbers, target, source, transmission_interval, verbose)
             # packet_train_response, unanswered = scapy_util.send_receive_train(target, packet_train_numbers, transmission_interval, 10, verbose)
             utility.print_verbose("Transmission finished", verbose)
             sniffer.join()
             # sort train by seq number
+            print("Size Packet: " + str(len(packets)))
             acks, rsts = order_packets(packets)
             round_trip_times, unanswered = calc_time(acks, rsts)
             print("Timer :" + str(timeit.default_timer()-start))
