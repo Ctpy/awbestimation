@@ -31,9 +31,12 @@ def evaluate_result(result_file, bottleneck, cross_traffic_delta):
                              math.fabs(estimated_available_bandwidth[1] - true_available_bandwidth))
         relative_error = min(math.fabs(1 - estimated_available_bandwidth[0] / true_available_bandwidth),
                              math.fabs(1 - estimated_available_bandwidth[1] / true_available_bandwidth))
+    print("Estimated AWB: " + str(estimated_available_bandwidth[0]) + "," + str(estimated_available_bandwidth[1]))
+    print("Bottleneck: " + str(bottleneck))
+    print("True AWB: " + str(true_available_bandwidth))
     print("In scope: " + str(in_scope))
-    print("Relative Error" + str(relative_error))
-    print("Absolute Error" + str(absolute_error))
+    print("Relative Error: " + str(relative_error))
+    print("Absolute Error: " + str(absolute_error))
 
     # Criteria 2: Performance - Track times - Resolution
     standard_deviation = np.mean(iteration_times)
@@ -45,3 +48,6 @@ def evaluate_result(result_file, bottleneck, cross_traffic_delta):
     # Evaluate using old knowledge
     # TODO: Store all results in a csv
     return None
+
+if __name__ == '__main__':
+    evaluate_result()
