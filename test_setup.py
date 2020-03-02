@@ -24,7 +24,7 @@ def run_test_environment(test_config):
         print("Run test: " + test_config)
         bottleneck = run_test.main(Namespace(config=test_config))
         # TODO: Evaluate results
-        eval_test.evaluate_result('result.json', bottleneck, cross_traffic_default)
+        eval_test.evaluate_result('result.json', bottleneck * 10**6, cross_traffic_default)
 
     # loop - tweak cross traffic
     # for i in range(iteration):
