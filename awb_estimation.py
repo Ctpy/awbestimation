@@ -41,6 +41,7 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
     grey_min = 0
     grey_max = 0
     # In Mbits
+    rate *= 1000000
     transmission_rate = rate * 0.75
     print("Transmission_rate: " + str(transmission_rate))
     # In Byte
