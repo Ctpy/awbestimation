@@ -173,8 +173,8 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
         filtered = None
         for packet_train in dt_filtered_train_list:
             timestamps, filtered = trend.robust_regression_filter(packet_train)
-            rr_filtered_pct.append(trend.pct_metric(timestamps)[1])
-            rr_filtered_pdt.append(trend.pdt_metric(timestamps)[1])
+            rr_filtered_pct.append(trend.pct_metric(zip(*timestamps)[1]))
+            rr_filtered_pdt.append(trend.pdt_metric(zip(*timestamps)[1]))
             rr_filtered_train_list.append(timestamps)
         rr_trend_pct, rr_trend_pdt, rr_trend_overall = trend.calculate_trend(pct, pdt, verbose)
         utility.print_verbose("RR Filtered: {}".format(filtered), verbose)
