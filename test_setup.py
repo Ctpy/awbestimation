@@ -16,13 +16,13 @@ def run_test_environment(test_config):
     cross_traffic_delta = data['cross_traffic_delta']
     rate_range = data['rate_range']
     switch_range = data['switch_range']
-    test_config, bottleneck = create_test.create_test_case(rate_range[0], rate_range[1], switch_range[0],
+    test_config = create_test.create_test_case(rate_range[0], rate_range[1], switch_range[0],
                                                            switch_range[1], cross_traffic_default)
     # loop - test_specification
     for i in range(iteration):
         # run test
         print("Run test: " + test_config)
-        run_test.main(Namespace(config=test_config))
+        bottleneck = run_test.main(Namespace(config=test_config))
         # TODO: Evaluate results
         eval_test.evaluate_result('result.json', bottleneck, cross_traffic_default)
 

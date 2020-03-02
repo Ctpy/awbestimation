@@ -22,7 +22,7 @@ def create_test_case(range_min, range_max, switch_count_min, switch_count_max, t
             }
     with open(result, 'w') as f:
         json.dump(data, f)
-    return result, min(capacity_range)
+    return result
 
 
 if __name__ == '__main__':

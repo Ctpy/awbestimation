@@ -40,7 +40,7 @@ def main(test_config):
     #
     # if test_parameters['keep_log'] is False:
     #     os.system("rm -r ./{}".format(test_parameters['folder_name']))
-
+    return bottleneck
 
 def cross_traffic_test():
     parser = argparse.ArgumentParser()
