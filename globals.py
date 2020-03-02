@@ -7,4 +7,10 @@ DT_CONSECUTIVE = 6
 global BOUNDARY_PCT
 global BOUNDARY_PDT
 
-# TODO: Assign values
+
+def update_globals(mtl, mti, dtc, bpct, bpdt):
+    MIN_TRAIN_LENGTH = mtl
+    MIN_TRANSMISSION_INTERVAL = mti
+    DT_CONSECUTIVE = dtc
+    BOUNDARY_PCT = bpct
+    BOUNDARY_PDT = bpdt

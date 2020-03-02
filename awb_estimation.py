@@ -45,6 +45,7 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
     transmission_rate = rate * 0.75
     print("Transmission_rate: " + str(transmission_rate))
     # In Byte
+    # TODO: Make packet size variable
     packet_size = 1500 * 8
     # Numbers of packets per train
     train_length = 100
@@ -53,19 +54,27 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
     # Probe starts here
     iteration_max = 1
     loop_counter = 0
+    iteration_time_list = []
+    iteration_fleet_list = []
+    rate_list = []
     while loop_counter < iteration_max and abs(awb_min - awb_max) > res:
+        start_iteration = timeit.default_timer()
+        rate_list.append(transmission_rate)
+        iteration_times = []
         # send N=12 streams
         mp.figure(1)
         pdt = []
         pct = []
         rtt_list = []
         rtt_train_list = []
+        iteration_timer = []
         utility.print_verbose(
             "Current Parameters \n Period: {}\n Train length:     {}\n Packet   size: {}\n Rate: {}".format(transmission_interval,
                                                                                                  train_length,
                                                                                                  packet_size, transmission_rate), verbose)
 
         for i in range(12):
+            start_fleet_iteration = timeit.default_timer()
             print("------------Fleet {} - Iteration {}-----------".format(loop_counter, i))
             utility.print_verbose("Generating packet_train", verbose)
             packet_train_numbers = generate_packet_train(current_ack_number, train_length)
@@ -95,7 +104,10 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
             utility.print_verbose("PDT: {}".format(pdt), verbose)
             utility.print_verbose("PCT: {}".format(pct), verbose)
             # # wait that fleets dont interfere
-            time.sleep(abs(mean))
+            end_fleet_iteration = timeit.default_timer() - start_fleet_iteration
+            iteration_times.append(end_fleet_iteration)
+            if mean != 0:
+                time.sleep(abs(mean))
 
         # plot RTT of all packet trains
         start_sent_time = rtt_list[0][0]
@@ -109,56 +121,7 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
         mp.savefig('plots/rtt{}.pdf'.format(loop_counter), format='pdf')
 
         # Determine trend based on PDT/PCT
-        increase_pdt = 0.0
-        grey_pdt = 0.0
-        no_trend_pdt = 0.0
-        increase_pct = 0.0
-        grey_pct = 0.0
-        no_trend_pct = 0.0
-
-        trend_pdt = -1
-        trend_pct = -1
-        trend_overall = -1
-        for i in pdt:
-            if i > 0.55:
-                increase_pdt += 1
-            elif i < 0.45:
-                no_trend_pdt += 1
-            else:
-                grey_pdt += 1
-
-        for i in pct:
-            if i > 0.6:
-                increase_pct += 1
-            elif i < 0.49:
-                no_trend_pct += 1
-            else:
-                grey_pct += 1
-        utility.print_verbose(
-            "PCT: INC:{} - NO:{} - GRAY:{} - Len{}".format(increase_pct, no_trend_pct, grey_pct, len(pct)), verbose)
-        utility.print_verbose(
-            "PDT: INC:{} - NO:{} - GRAY:{} - Len{}".format(increase_pdt, no_trend_pdt, grey_pdt, len(pdt)), verbose)
-        if increase_pdt / len(pdt) > 0.60:
-            trend_pdt = 2
-        elif no_trend_pdt / len(pdt) > 0.60:
-            trend_pdt = 0
-        else:
-            trend_pdt = 1
-
-        if increase_pct / len(pct) > 0.60:
-            trend_pct = 2
-        elif no_trend_pct / len(pct) > 0.60:
-            trend_pct = 0
-        else:
-            trend_pct = 1
-        utility.print_verbose("PCT:{}-PDT:{}".format(trend_pct, trend_pdt), verbose)
-        if trend_pdt == 2 or trend_pct == 2:
-            trend_overall = 2
-        elif trend_pdt == 2 and trend_pct == 1:
-            trend_overall = 2
-        elif trend_pdt == 1 and trend_pct == 2:
-            trend_overall = 2
-        utility.print_verbose("Trend after PCT/PDT: {}".format(trend_overall), verbose)
+        trend_pdt, trend_pct, trend_overall = trend.calculate_trend(pdt, pct, verbose)
         # Decreasing trend filter
         dt_filtered_pct = []
         dt_filtered_pdt = []
@@ -170,6 +133,7 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
             utility.print_verbose("Filtered out: {}".format(len(filtered)), verbose)
             dt_filtered_train_list.append(timestamps)
 
+        # PCT/PDT metric visualization
         utility.print_verbose("PDT: {}".format(dt_filtered_pdt), verbose)
         utility.print_verbose("PCT: {}".format(dt_filtered_pct), verbose)
         mp.figure(2)
@@ -199,119 +163,23 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
         mp.legend(loc='upper right')
         mp.savefig('plots/pct-metric.pdf', format='pdf')
         mp.clf()
+        dt_trend_pdt, dt_trend_pct, dt_trend_overall = trend.calculate_trend(dt_filtered_pdt, dt_filtered_pct, verbose)
+        utility.print_verbose("Trend after DT filtering: {}".format(dt_trend_overall), verbose)
 
-        increase_pdt = 0.0
-        grey_pdt = 0.0
-        no_trend_pdt = 0.0
-        increase_pct = 0.0
-        grey_pct = 0.0
-        no_trend_pct = 0.0
-
-        if trend_overall == -1 or trend_overall == 1:
-            for i in dt_filtered_pdt:
-                if i > 0.55:
-                    increase_pdt += 1
-                elif i < 0.45:
-                    no_trend_pdt += 1
-                else:
-                    grey_pdt += 1
-
-            for i in dt_filtered_pct:
-                if i > 0.60:
-                    increase_pct += 1
-                elif i < 0.49:
-                    no_trend_pct += 1
-                else:
-                    grey_pct += 1
-
-            if increase_pdt / len(pdt) > 0.60:
-                trend_pdt = 2
-            elif no_trend_pdt / len(pdt) > 0.60:
-                trend_pdt = 0
-            else:
-                trend_pdt = 1
-
-            if increase_pct / len(pct) > 0.60:
-                trend_pct = 2
-            elif no_trend_pct / len(pct) > 0.60:
-                trend_pct = 0
-            else:
-                trend_pct = 1
-
-            if trend_pdt == 2 or trend_pct == 2:
-                trend_overall = 2
-            elif trend_pdt == 2 and trend_pct == 1:
-                trend_overall = 2
-            elif trend_pdt == 1 and trend_pct == 2:
-                trend_overall = 2
-
-            utility.print_verbose("Trend after DT filtering: {}".format(trend_overall), verbose)
-            # Robust regression filter
-            if trend_overall == -1 or trend_overall == 1:
-                increase_pdt = 0.0
-                grey_pdt = 0.0
-                no_trend_pdt = 0.0
-                increase_pct = 0.0
-                grey_pct = 0.0
-                no_trend_pct = 0.0
-                rr_filtered_pct = []
-                rr_filtered_pdt = []
-                rr_filtered_train_list = []
-                for packet_train in dt_filtered_train_list:
-                    timestamps, filtered = trend.robust_regression_filter(zip(*packet_train)[1])
-                    rr_filtered_pct.append(trend.pct_metric(timestamps))
-                    rr_filtered_pdt.append(trend.pdt_metric(timestamps))
-                    rr_filtered_train_list.append(timestamps)
-                utility.print_verbose("RR Filtered: {}".format(filtered), verbose)
-                utility.print_verbose("PDT: {}".format(rr_filtered_pdt), verbose)
-                utility.print_verbose("PCT: {}".format(rr_filtered_pct), verbose)
-
-                for i in rr_filtered_pdt:
-                    if i > 0.55:
-                        increase_pdt += 1
-                    elif i < 0.45:
-                        no_trend_pdt += 1
-                    else:
-                        grey_pdt += 1
-
-                for i in rr_filtered_pct:
-                    if i > 0.60:
-                        increase_pct += 1
-                    elif i < 0.49:
-                        no_trend_pct += 1
-                    else:
-                        grey_pct += 1
-
-                if increase_pdt / len(pdt) > 0.60:
-                    trend_pdt = 2
-                elif no_trend_pdt / len(pdt) > 0.60:
-                    trend_pdt = 0
-                else:
-                    trend_pdt = 1
-
-                if increase_pct / len(pct) > 0.60:
-                    trend_pct = 2
-                elif no_trend_pct / len(pct) > 0.60:
-                    trend_pct = 0
-                else:
-                    trend_pct = 1
-
-                if trend_pdt == 2 and trend_pct == 2:
-                    trend_overall = 2
-                elif trend_pdt == 2 and trend_pct == 1:
-                    trend_overall = 2
-                elif trend_pdt == 1 and trend_pct == 2:
-                    trend_overall = 2
-                elif trend_pdt == 0 and trend_pct == 0:
-                    trend_overall = 0
-                elif trend_pdt == 0 and trend_pct == 1:
-                    trend_overall = 0
-                elif trend_pdt == 1 and trend_pct == 0:
-                    trend_overall = 0
-                else:
-                    trend_overall = 1
-
-                utility.print_verbose("Trend after RR filtering: {}".format(trend_overall), verbose)
+        rr_filtered_pct = []
+        rr_filtered_pdt = []
+        rr_filtered_train_list = []
+        filtered = None
+        for packet_train in dt_filtered_train_list:
+            timestamps, filtered = trend.robust_regression_filter(zip(*packet_train)[1])
+            rr_filtered_pct.append(trend.pct_metric(timestamps))
+            rr_filtered_pdt.append(trend.pdt_metric(timestamps))
+            rr_filtered_train_list.append(timestamps)
+        rr_trend_pct, rr_trend_pdt, rr_trend_overall = trend.calculate_trend(pct, pdt, verbose)
+        utility.print_verbose("RR Filtered: {}".format(filtered), verbose)
+        utility.print_verbose("PDT: {}".format(rr_trend_pdt), verbose)
+        utility.print_verbose("PCT: {}".format(rr_trend_pct), verbose)
+        utility.print_verbose("Trend after RR filtering: {}".format(trend_overall), verbose)
         # Rate adjustment
         transmission_rate, awb_min, awb_max, grey_min, grey_max = calculate_parameters(trend_overall, transmission_rate,
                                                                                        awb_min, awb_max, grey_min,
@@ -319,11 +187,18 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
         utility.print_verbose("New Range [{},{}]".format(awb_min, awb_max), verbose)
         transmission_interval = calculate_transmission_interval(transmission_rate, packet_size)
         # Terminate and return
-        utility.print_verbose("Runtime for 1 fleet: {}s".format(timeit.default_timer() - start), verbose)
         loop_counter += 1
-        time.sleep(2)
-    print ("[" + str(awb_min) + "," + str(awb_max) + "]")
-    data = {'result': [awb_min, awb_max]}
+        end_iteration = timeit.default_timer() - start_iteration
+        iteration_time_list.append(end_iteration)
+        iteration_fleet_list.append(iteration_times)
+        utility.print_verbose("Runtime for iteration {} fleet: {}s".format(loop_counter, end_iteration), verbose)
+        time.sleep(0.5)
+    print("[" + str(awb_min) + "," + str(awb_max) + "]")
+    data = {'result': [awb_min, awb_max],
+            'iteration_times': iteration_time_list,
+            'fleet_times': iteration_fleet_list
+            }
+    # TODO: Add more information time per iteration time overall
     with open('result.json', 'w') as f:
         json.dump(data, f)
 

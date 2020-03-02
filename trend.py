@@ -8,16 +8,59 @@ import utility
 mp.switch_backend('agg')
 
 
-def calculate_trend(timestamps, packet_loss, train_length):
+def calculate_trend(pdt, pct, verbose):
     np.set_printoptions(suppress=True)
-    # Evaluate timestamps
+    increase_pdt = 0.0
+    grey_pdt = 0.0
+    no_trend_pdt = 0.0
+    increase_pct = 0.0
+    grey_pct = 0.0
+    no_trend_pct = 0.0
 
-    # Decreasing Trend due to buffering DT filter to filter out large bursts
+    trend_pdt = -1
+    trend_pct = -1
+    trend_overall = -1
+    for i in pdt:
+        if i > 0.55:
+            increase_pdt += 1
+        elif i < 0.45:
+            no_trend_pdt += 1
+        else:
+            grey_pdt += 1
 
-    # Robust Regression filter to filter out small bursts by using Iteratively Re-weighted Least Square method (IRLS)
+    for i in pct:
+        if i > 0.6:
+            increase_pct += 1
+        elif i < 0.49:
+            no_trend_pct += 1
+        else:
+            grey_pct += 1
+    utility.print_verbose(
+        "PCT: INC:{} - NO:{} - GRAY:{} - Len{}".format(increase_pct, no_trend_pct, grey_pct, len(pct)), verbose)
+    utility.print_verbose(
+        "PDT: INC:{} - NO:{} - GRAY:{} - Len{}".format(increase_pdt, no_trend_pdt, grey_pdt, len(pdt)), verbose)
+    if increase_pdt / len(pdt) > 0.60:
+        trend_pdt = 2
+    elif no_trend_pdt / len(pdt) > 0.60:
+        trend_pdt = 0
+    else:
+        trend_pdt = 1
 
-    # Evaluate trend
-    return
+    if increase_pct / len(pct) > 0.60:
+        trend_pct = 2
+    elif no_trend_pct / len(pct) > 0.60:
+        trend_pct = 0
+    else:
+        trend_pct = 1
+    utility.print_verbose("PCT:{}-PDT:{}".format(trend_pct, trend_pdt), verbose)
+    if trend_pdt == 2 or trend_pct == 2:
+        trend_overall = 2
+    elif trend_pdt == 2 and trend_pct == 1:
+        trend_overall = 2
+    elif trend_pdt == 1 and trend_pct == 2:
+        trend_overall = 2
+    utility.print_verbose("Trend after PCT/PDT: {}".format(trend_overall), verbose)
+    return trend_pct, trend_pdt, trend_overall
 
 
 def pct_metric(timestamps):
@@ -62,7 +105,7 @@ def decreasing_trend_filter(timestamps_tuple, verbose=False):
     gap_index = []
     for i in range(len(timestamps) - 1):
         if timestamps[i] + standard_derivation < timestamps[i + 1]:
-            gap_index.append(i+1)
+            gap_index.append(i + 1)
     print("gap")
     print(gap_index)
     # search for consecutive packet sample with decreasing rtt
@@ -129,7 +172,7 @@ def robust_regression_filter(timestamps_tuple):
     it = 0
     while it == 0 or abs(m - m_re_weighted) > 1.4901e-08 * max(abs(m), abs(m_re_weighted)) or abs(
             c - c_re_weighted) > 1.4901e-08 * max(
-            abs(c), abs(c_re_weighted)):
+        abs(c), abs(c_re_weighted)):
         if it + 1 > iter_limit:
             break
 

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "iterations": 1,
   "rate_range": [5, 100],
-  "switch_range": [0, 10],
+  "switch_range": [7, 7],
   "cross_traffic": 0.5,
   "cross_traffic_delta": [-0.5, 0.5]
 }

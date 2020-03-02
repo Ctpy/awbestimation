@@ -105,6 +105,7 @@ def build_topo(switch_count, duration, capacities, cross_traffic, verbose=False)
     set_capacities(switch_count, capacities, net)
 
     leftHost.cmd('tc qdisc replace dev leftHost-eth0 root fq pacing')
+    leftHost.cmd('ethtool leftHost-eth0 | grep speed')
     leftHost.cmd('ethtool -K leftHost-eth0 tso off')
     rightHost.cmd('tc qdisc replace dev rightHost-eth0 root netem delay 50')
 

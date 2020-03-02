@@ -1,9 +1,8 @@
 import json
 import math
-import subprocess
-from random import random
 import run_test
 import create_test
+import eval_test
 from argparse import Namespace
 
 def run_test_environment(test_config):
@@ -24,24 +23,9 @@ def run_test_environment(test_config):
         # run test
         print("Run test: " + test_config)
         run_test.main(Namespace(config=test_config))
-        # evaluate test
-        result = None
-        with open('result.json', 'r') as f:
-            result = json.load(f)
-        true_available_bandwidth = bottleneck - bottleneck * cross_traffic_default
-        estimated_available_bandwidth = result['result']
-        if estimated_available_bandwidth[0] < true_available_bandwidth < estimated_available_bandwidth[1]:
-            # reward
-            absolute_error = 0
-            relative_error = 0
-            break
-        else:
-            absolute_error = min(math.fabs(estimated_available_bandwidth[0] - true_available_bandwidth),
-                                 math.fabs(estimated_available_bandwidth[1] - true_available_bandwidth))
-            relative_error = min(math.fabs(1 - estimated_available_bandwidth[0] / true_available_bandwidth),
-                                 math.fabs(1 - estimated_available_bandwidth[1] / true_available_bandwidth))
-        print("Relative Error" + str(relative_error))
-        print("Absolute Error" + str(absolute_error))
+        # TODO: Evaluate results
+        eval_test.evaluate_result('result.json', bottleneck, cross_traffic_default)
+
     # loop - tweak cross traffic
     # for i in range(iteration):
     #     random_traffic = cross_traffic_default + random.uniform(cross_traffic_delta[0], cross_traffic_delta[1])
