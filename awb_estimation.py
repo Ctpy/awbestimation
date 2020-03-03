@@ -52,7 +52,7 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
     current_ack_number = 1
     transmission_interval = calculate_transmission_interval(transmission_rate, packet_size)
     # Probe starts here
-    iteration_max = 1
+    iteration_max = 10
     loop_counter = 0
     iteration_time_list = []
     iteration_fleet_list = []
@@ -222,7 +222,7 @@ def calc_time(acks, resets):
     start_time = acks[0].time
     counter = 0
     for i in range(len(acks)):
-        if len(acks) >= i + counter:
+        if len(acks) <= i + counter:
             packet_loss += 1
             continue
         elif acks[i].ack == resets[i+counter].seq:
@@ -231,7 +231,6 @@ def calc_time(acks, resets):
         else:
             counter += 1
             i -= 1
-            print("Ack: " + str(acks[i]))
     return packets, packet_loss
 
 
