@@ -2,6 +2,7 @@ import json
 import math
 import pandas
 import numpy as np
+import globals
 
 
 def evaluate_result(result_file, bottleneck, cross_traffic_delta):
@@ -48,4 +49,8 @@ def evaluate_result(result_file, bottleneck, cross_traffic_delta):
     # Evaluate using old knowledge
 
     # TODO: Store all results in a csv
+
+    # update globals
+    # TODO assign criteria
+    globals.update_global_file()
     return None

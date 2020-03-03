@@ -27,23 +27,23 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
     :param resolution -- Accuracy of the estimation
     :param verbose -- more output
     """
+    start_tool = timeit.default_timer()
+    globals.update_global_tool()
     mkr = ['.', ',', 'o', 'x', 'D', 'd', '+', '1', '2', '3', '4', 's', 'h', '*']
     color = ['blue', 'black', 'cyan', 'magenta', 'green', 'yellow', 'red', 'violet', 'brown', 'grey', '#eeefff', 'pink']
-    start = timeit.default_timer()
     res = 0.1
     utility.print_verbose("Capacity is :" + str(rate) + "bit", verbose)
     utility.print_verbose("Start available bandwidth estimation", verbose)
     # Config Data here
     utility.print_verbose("Initializing parameters", verbose)
-    current_awb = rate  # start at 75% of capacity
+    rate *= 1000000
     awb_min = 0  # Check if smaller 0
     awb_max = rate  # Check if greater 100 TODO: increase to max possible rate
     grey_min = 0
     grey_max = 0
     # In Mbits
-    rate *= 1000000
     transmission_rate = rate * 0.75
-    print("Transmission_rate: " + str(transmission_rate))
+    utility.print_verbose("Transmission_rate: " + str(transmission_rate), verbose)
     # In Byte
     # TODO: Make packet size variable
     packet_size = 1500 * 8
@@ -67,7 +67,6 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
         pct = []
         rtt_list = []
         rtt_train_list = []
-        iteration_timer = []
         utility.print_verbose(
             "Current Parameters \n Period: {}\n Train length:     {}\n Packet   size: {}\n Rate: {}".format(transmission_interval,
                                                                                                  train_length,
@@ -75,7 +74,7 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
 
         for i in range(12):
             start_fleet_iteration = timeit.default_timer()
-            print("------------Fleet {} - Iteration {}-----------".format(loop_counter, i))
+            utility.print_verbose("------------Fleet {} - Iteration {}-----------".format(loop_counter, i), verbose)
             utility.print_verbose("Generating packet_train", verbose)
             packet_train_numbers = generate_packet_train(current_ack_number, train_length)
             last_ack_number = packet_train_numbers[-1] + 40
@@ -90,10 +89,9 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
             utility.print_verbose("Transmission finished", verbose)
             sniffer.join()
             # sort train by seq number
-            print("Size Packet: " + str(len(packets)))
             acks, rsts = order_packets(packets)
             round_trip_times, unanswered = calc_time(acks, rsts)
-            print("Timer :" + str(timeit.default_timer()-start))
+            utility.print_verbose("Timer :" + str(timeit.default_timer()-start), verbose)
             utility.print_verbose("Calculating RTT", verbose)
             # packet_train_response.sort(key=lambda packet: packet[1].seq)
             # round_trip_times = scapy_util.calculate_round_trip_time(packet_train_response)
@@ -192,14 +190,14 @@ def estimate_available_bandwidth(source, target, rate=1.0, resolution=0.5, verbo
         iteration_fleet_list.append(iteration_times)
         utility.print_verbose("Runtime for iteration {} fleet: {}s".format(loop_counter, end_iteration), verbose)
         time.sleep(0.5)
-    print("[" + str(awb_min) + "," + str(awb_max) + "]")
+    utility.print_verbose("[" + str(awb_min) + "," + str(awb_max) + "]", verbose)
     data = {'result': [awb_min, awb_max],
             'iteration_times': iteration_time_list,
             'fleet_times': iteration_fleet_list
             }
-    # TODO: Add more information time per iteration time overall
     with open('result.json', 'w') as f:
         json.dump(data, f)
+    utility.print_verbose("Runtime: " + str(timeit.default_timer() - start_tool), verbose)
 
 
 def order_packets(packets):

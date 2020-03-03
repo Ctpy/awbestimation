@@ -1,9 +1,9 @@
 import json
-import math
 import run_test
 import create_test
 import eval_test
 from argparse import Namespace
+
 
 def run_test_environment(test_config):
     # read the test specification
@@ -19,15 +19,16 @@ def run_test_environment(test_config):
     test_config = create_test.create_test_case(rate_range[0], rate_range[1], switch_range[0],
                                                            switch_range[1], cross_traffic_default)
     # loop - test_specification
+    # TODO: Init columns here
     for i in range(iteration):
         # run test
         print("Run test: " + test_config)
         bottleneck = run_test.main(Namespace(config=test_config))
-        # TODO: Evaluate results
         eval_test.evaluate_result('result.json', bottleneck * 10**6, cross_traffic_default)
+    # data = {}
+    # df = pd.DataFrame(data)
 
-
-    # loop - tweak cross traffic
+    # loop - tweaked cross traffic
     # for i in range(iteration):
     #     random_traffic = cross_traffic_default + random.uniform(cross_traffic_delta[0], cross_traffic_delta[1])
     #     test_config, bottleneck = create_test.create_test_case(rate_range[0], rate_range[1], switch_range[0],
